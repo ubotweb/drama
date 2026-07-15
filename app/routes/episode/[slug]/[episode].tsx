@@ -1,5 +1,5 @@
 import { createRoute } from 'honox/factory'
-import { fetchEpisodeData } from '../../utils'
+import { fetchEpisodeData } from '../../../utils'
 
 export default createRoute(async (c) => {
   const slug = c.req.param('slug');
