@@ -5,6 +5,8 @@ import pages from '@hono/vite-cloudflare-pages'
 export default defineConfig({
   plugins: [
     honox(),
-    pages()
+    pages({
+      entry: 'app/server.ts'
+    })
   ]
 })
