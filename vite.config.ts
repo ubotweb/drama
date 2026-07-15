@@ -4,17 +4,21 @@ import client from 'honox/vite/client'
 import pages from '@hono/vite-cloudflare-pages'
 
 export default defineConfig(({ mode }) => {
-  // 1. Build khusus untuk sisi Client (Browser)
+  // 1. Build khusus Client
   if (mode === 'client') {
     return {
+      build: {
+        outDir: 'dist'
+      },
       plugins: [client()]
     }
   }
 
-  // 2. Build khusus untuk sisi Server (menghasilkan _worker.js untuk Cloudflare)
+  // 2. Build khusus Server (Pages Function)
   return {
     build: {
-      emptyOutDir: false // PENTING: Mencegah file client terhapus saat server sedang dirakit
+      outDir: 'dist', // Mutlak diperlukan: Memaksa _worker.js keluar di folder utama
+      emptyOutDir: false // Mutlak diperlukan: Mencegah penghapusan aset client yang sudah dirakit
     },
     plugins: [
       honox(),
