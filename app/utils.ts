@@ -2,9 +2,6 @@ import { getCookie, setCookie } from 'hono/cookie';
 
 export const API_BASE = "https://dramapi.ubot.web.id/api";
 
-// =====================================================================
-// MANAJEMEN STATE BAHASA MANDIRI (ANTI-BUG)
-// =====================================================================
 export function getAppLang(c: any): string {
     const urlLang = c.req.query('lang');
     let lang = getCookie(c, 'app_lang') || 'id';
@@ -15,9 +12,6 @@ export function getAppLang(c: any): string {
     return lang;
 }
 
-// =====================================================================
-// SISTEM KAMUS UI MULTI-BAHASA DINAMIS (i18n) - 17 BAHASA GLOBAL
-// =====================================================================
 const UI_TRANSLATIONS: Record<string, Record<string, string>> = {
     'id': { home: "Beranda", library: "Pustaka", account: "Akun", trending: "Drama Pilihan", watch_now: "Mulai Tonton", suitable: "Cocok untukmu", episode: "Episode", watch_ep1: "Tonton Episode 1", select_ep: "Pilih Episode", prev: "Sebelumnya", next: "Selanjutnya", ep_list: "Daftar Episode", locked: "Episode Premium Terkunci", limit: "Batas Episode Tercapai", watch_ad: "Tonton Iklan (Buka 1 Ep)", vip: "Berlangganan VIP", login: "Login Sekarang", not_found: "Data tidak ditemukan", no_video: "Video belum tersedia untuk negara ini.", limit_desc: "Pengguna tanpa akun hanya dapat menonton hingga episode 10. Silakan login untuk menonton lebih banyak secara gratis.", locked_desc: "Anda telah mencapai batas 15 episode gratis. Tonton satu iklan singkat untuk membuka episode ini, atau jadilah VIP." },
     'en': { home: "Home", library: "Library", account: "Account", trending: "Trending Now", watch_now: "Watch Now", suitable: "Good for you", episode: "Episodes", watch_ep1: "Watch Episode 1", select_ep: "Select Episode", prev: "Previous", next: "Next", ep_list: "Episode List", locked: "Premium Episode Locked", limit: "Episode Limit Reached", watch_ad: "Watch Ad (Unlock 1 Ep)", vip: "Subscribe VIP", login: "Login Now", not_found: "Data not found", no_video: "Video is not available for this country.", limit_desc: "Guests can only watch up to episode 10. Please log in to watch more for free.", locked_desc: "You have reached the 15 free episodes limit. Watch a short ad to unlock this episode, or become a VIP." },
@@ -43,9 +37,6 @@ export function t(lang: string, key: string): string {
     return dictionary[key] || UI_TRANSLATIONS['id']?.[key] || UI_TRANSLATIONS['en']?.[key] || UI_TRANSLATIONS['zh']?.[key] || key;
 }
 
-// =====================================================================
-// KEAMANAN KRIPTOGRAFI NATIVE (CLOUDFLARE WORKERS)
-// =====================================================================
 export async function hashPassword(password: string, providedSalt?: string) {
     const enc = new TextEncoder();
     let salt: Uint8Array;
@@ -69,7 +60,7 @@ export async function verifyPassword(password: string, storedHash: string) {
 }
 
 // =====================================================================
-// API FETCHERS (DENGAN PENANGKAP PAGE_TOKEN UTK PAGINASI)
+// API FETCHERS DENGAN PARSER TAHAN BANTING (ANTI-BUG) & PENANGKAP PAGE TOKEN
 // =====================================================================
 
 export async function fetchGenres(lang: string) {
@@ -101,18 +92,30 @@ export async function fetchLibrary(lang: string, searchParams: string = '') {
 
         rawData.forEach((chunk: string) => {
             const cleanChunk = chunk.replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/\\\//g, '/');
-            const regex = /"id":"(\d+)","title":"(.*?)","description":"(.*?)","slug":"(.*?)","thumbnailUrl":"(.*?)"/g;
-            let match;
-            while ((match = regex.exec(cleanChunk)) !== null) {
-                extractedItems.push({
-                    id: match[1], title: match[2], description: match[3], slug: match[4], thumbnailUrl: match[5]
-                });
+            
+            // TEKNIK PARSING PROFESIONAL: Membedah string menjadi objek-objek kecil 
+            // sehingga urutan key (slug, title, dsb) tidak akan pernah menjadi masalah lagi!
+            const blocks = cleanChunk.split('{"id":"');
+            for (let i = 1; i < blocks.length; i++) {
+                const block = '"id":"' + blocks[i];
+                const idMatch = block.match(/"id":"(\d+)"/);
+                const titleMatch = block.match(/"title":"(.*?)"/);
+                const descMatch = block.match(/"description":"(.*?)"/);
+                const slugMatch = block.match(/"slug":"(.*?)"/);
+                const thumbMatch = block.match(/"thumbnailUrl":"(.*?)"/);
+                
+                if (idMatch && titleMatch && slugMatch && thumbMatch) {
+                    extractedItems.push({
+                        id: idMatch[1], title: titleMatch[1], description: descMatch ? descMatch[1] : "",
+                        slug: slugMatch[1], thumbnailUrl: thumbMatch[1]
+                    });
+                }
             }
             
-            // PENANGKAP PAGE_TOKEN CERDAS (Mencari kunci pagination dari API Shortflix)
+            // PENANGKAP PAGINASI MUTLAK: Memburu string Base64 yang diawali dengan "eyJpZCI6"
             if (!nextPageToken) {
-                const tokenMatch = cleanChunk.match(/"(?:nextPageToken|pageToken)"\s*:\s*"([^"]+)"/);
-                if (tokenMatch) nextPageToken = tokenMatch[1];
+                const tMatch = cleanChunk.match(/"[^"]+"\s*:\s*"(eyJpZCI6[^"]+)"/);
+                if (tMatch) nextPageToken = tMatch[1];
             }
         });
 
@@ -123,9 +126,10 @@ export async function fetchLibrary(lang: string, searchParams: string = '') {
     }
 }
 
-export async function fetchCatalog(lang: string) {
+export async function fetchCatalog(lang: string, searchParams: string = '') {
     try {
-        const res = await fetch(`${API_BASE}/catalog/${lang}`);
+        const query = searchParams && !searchParams.startsWith('?') ? `?${searchParams}` : searchParams;
+        const res = await fetch(`${API_BASE}/catalog/${lang}${query}`);
         if (!res.ok) return { movies: [], nextPageToken: null };
         const json = await res.json();
         
@@ -138,16 +142,27 @@ export async function fetchCatalog(lang: string) {
 
         rawData.forEach((chunk: string) => {
             const cleanChunk = chunk.replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/\\\//g, '/');
-            const regex = /"id":"(\d+)","title":"(.*?)","description":"(.*?)","slug":"(.*?)","thumbnailUrl":"(.*?)"/g;
-            let match;
-            while ((match = regex.exec(cleanChunk)) !== null) {
-                extractedItems.push({
-                    id: match[1], title: match[2], description: match[3], slug: match[4], thumbnailUrl: match[5]
-                });
+            
+            const blocks = cleanChunk.split('{"id":"');
+            for (let i = 1; i < blocks.length; i++) {
+                const block = '"id":"' + blocks[i];
+                const idMatch = block.match(/"id":"(\d+)"/);
+                const titleMatch = block.match(/"title":"(.*?)"/);
+                const descMatch = block.match(/"description":"(.*?)"/);
+                const slugMatch = block.match(/"slug":"(.*?)"/);
+                const thumbMatch = block.match(/"thumbnailUrl":"(.*?)"/);
+                
+                if (idMatch && titleMatch && slugMatch && thumbMatch) {
+                    extractedItems.push({
+                        id: idMatch[1], title: titleMatch[1], description: descMatch ? descMatch[1] : "",
+                        slug: slugMatch[1], thumbnailUrl: thumbMatch[1]
+                    });
+                }
             }
+            
             if (!nextPageToken) {
-                const tokenMatch = cleanChunk.match(/"(?:nextPageToken|pageToken)"\s*:\s*"([^"]+)"/);
-                if (tokenMatch) nextPageToken = tokenMatch[1];
+                const tMatch = cleanChunk.match(/"[^"]+"\s*:\s*"(eyJpZCI6[^"]+)"/);
+                if (tMatch) nextPageToken = tMatch[1];
             }
         });
 
