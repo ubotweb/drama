@@ -1,7 +1,8 @@
 import { jsxRenderer } from 'hono/jsx-renderer'
 import { t } from '../utils'
 
-export default jsxRenderer(({ children, title, c }) => {
+// PERBAIKAN FATAL: 'c' dipindahkan ke argumen kedua yang merupakan posisi Context sesungguhnya di Hono
+export default jsxRenderer(({ children, title }, c) => {
   const currentLang = c.get('lang') || 'id';
 
   return (
