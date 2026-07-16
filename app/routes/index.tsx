@@ -1,5 +1,5 @@
 import { createRoute } from 'honox/factory'
-import { fetchLibrary, t, getAppLang } from '../utils'
+import { fetchCatalog, t, getAppLang } from '../utils'
 
 const loadMoreTexts: Record<string, string> = {
   'id': 'Tampilkan Lebih Banyak',
@@ -24,8 +24,8 @@ const loadMoreTexts: Record<string, string> = {
 export default createRoute(async (c) => {
   const currentLang = getAppLang(c); 
   
-  // Mengambil API Paginasi Asli (Mendapatkan Film & nextPageToken)
-  const { movies, nextPageToken } = await fetchLibrary(currentLang, "");
+  // Mengambil Data API dan Menangkap PageToken untuk Paginasi Beranda
+  const { movies, nextPageToken } = await fetchCatalog(currentLang, "");
   
   const heroMovie = movies.length > 0 ? movies[Math.floor(Math.random() * movies.length)] : null;
   const loadMoreBtnText = loadMoreTexts[currentLang] || 'Load More';
@@ -67,7 +67,6 @@ export default createRoute(async (c) => {
               ))}
             </div>
 
-            {/* Tombol akan muncul hanya jika Token Paginasi Asli Tersedia */}
             {nextPageToken && (
               <div class="flex justify-center mt-4 mb-12">
                 <button id="load-more-btn" data-token={nextPageToken} class="bg-[#1a1a1a] hover:bg-red-600 text-white px-8 py-3.5 rounded-full font-bold transition-all border border-white/10 hover:border-red-600 shadow-lg flex items-center gap-2">
@@ -84,7 +83,7 @@ export default createRoute(async (c) => {
         )}
       </div>
 
-      {/* SCRIPT FETCH PAGINASI API REAL-TIME */}
+      {/* SCRIPT FETCH PAGINASI API REAL-TIME (Menggunakan Parser Tahan Banting) */}
       <script dangerouslySetInnerHTML={{__html: `
         document.addEventListener("DOMContentLoaded", function() {
             const btn = document.getElementById('load-more-btn');
@@ -102,7 +101,7 @@ export default createRoute(async (c) => {
                 try {
                     const lang = document.documentElement.lang || 'id';
                     const apiBase = "https://dramapi.ubot.web.id/api";
-                    const fetchUrl = apiBase + '/library/' + lang + '?pageToken=' + encodeURIComponent(token);
+                    const fetchUrl = apiBase + '/catalog/' + lang + '?pageToken=' + encodeURIComponent(token);
                     
                     const res = await fetch(fetchUrl);
                     const json = await res.json();
@@ -115,14 +114,22 @@ export default createRoute(async (c) => {
                     
                     rawData.forEach(chunk => {
                         const cleanChunk = chunk.replace(/\\\\"/g, '"').replace(/\\\\\\\\/g, '\\\\').replace(/\\\\\\//g, '/');
-                        const regex = /"id":"(\\\\d+)","title":"(.*?)","description":"(.*?)","slug":"(.*?)","thumbnailUrl":"(.*?)"/g;
-                        let match;
-                        while ((match = regex.exec(cleanChunk)) !== null) {
-                            newItems.push({ id: match[1], title: match[2], description: match[3], slug: match[4], thumbnailUrl: match[5] });
+                        const blocks = cleanChunk.split('{"id":"');
+                        
+                        for (let i = 1; i < blocks.length; i++) {
+                            const block = '"id":"' + blocks[i];
+                            const idMatch = block.match(/"id":"(\\\\d+)"/);
+                            const titleMatch = block.match(/"title":"(.*?)"/);
+                            const slugMatch = block.match(/"slug":"(.*?)"/);
+                            const thumbMatch = block.match(/"thumbnailUrl":"(.*?)"/);
+                            
+                            if (idMatch && titleMatch && slugMatch && thumbMatch) {
+                                newItems.push({ id: idMatch[1], title: titleMatch[1], slug: slugMatch[1], thumbnailUrl: thumbMatch[1] });
+                            }
                         }
                         
                         if (!nextToken) {
-                            const tMatch = cleanChunk.match(/"(?:nextPageToken|pageToken)"\\s*:\\s*"([^"]+)"/);
+                            const tMatch = cleanChunk.match(/"[^"]+"\\s*:\\s*"(eyJpZCI6[^"]+)"/);
                             if (tMatch) nextToken = tMatch[1];
                         }
                     });
