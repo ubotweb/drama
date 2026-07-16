@@ -58,7 +58,7 @@ export async function verifyPassword(password: string, storedHash: string) {
 }
 
 // =====================================================================
-// API FETCHERS DENGAN PENGAMANAN FALLBACK DATA MUTLAK
+// API FETCHERS DENGAN PENGAMANAN PERETASAN NEXT.JS ESCAPING STRING
 // =====================================================================
 export async function fetchCatalog(lang: string) {
     const res = await fetch(`${API_BASE}/catalog/${lang}`);
@@ -72,13 +72,16 @@ export async function fetchCatalog(lang: string) {
     const extractedItems: any[] = [];
 
     rawData.forEach((chunk: string) => {
-        const regex = /{"id":"(\d+)","title":"(.*?)","description":"(.*?)","slug":"(.*?)","thumbnailUrl":"(.*?)"/g;
+        // PERBAIKAN FATAL: Menghapus semua escaping backslash (\) bawaan NextJS agar Regex bisa membedahnya
+        const cleanChunk = chunk.replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/\\\//g, '/');
+        
+        const regex = /"id":"(\d+)","title":"(.*?)","description":"(.*?)","slug":"(.*?)","thumbnailUrl":"(.*?)"/g;
         let match;
-        while ((match = regex.exec(chunk)) !== null) {
+        while ((match = regex.exec(cleanChunk)) !== null) {
             extractedItems.push({
                 id: match[1],
-                title: match[2].replace(/\\"/g, '"').replace(/\\\\/g, ''),
-                description: match[3].replace(/\\n/g, ' ').replace(/\\"/g, '"').replace(/\\\\/g, ''),
+                title: match[2],
+                description: match[3],
                 slug: match[4],
                 thumbnailUrl: match[5]
             });
@@ -101,15 +104,18 @@ export async function fetchMovieDetail(lang: string, slug: string) {
     let maxEpisode = 0;
 
     rawData.forEach((chunk: string) => {
+        // PERBAIKAN FATAL
+        const cleanChunk = chunk.replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/\\\//g, '/');
+        
         if (!movie) {
-            const titleMatch = chunk.match(/"title":"(.*?)".*?"slug":"(.*?)"/);
-            const descMatch = chunk.match(/"description":"(.*?)"/);
-            const thumbMatch = chunk.match(/"thumbnailUrl":"(.*?)"/);
+            const titleMatch = cleanChunk.match(/"title":"(.*?)".*?"slug":"(.*?)"/);
+            const descMatch = cleanChunk.match(/"description":"(.*?)"/);
+            const thumbMatch = cleanChunk.match(/"thumbnailUrl":"(.*?)"/);
             
             if (titleMatch && titleMatch[2] === slug) {
                 movie = {
-                    title: titleMatch[1].replace(/\\"/g, '"').replace(/\\\\/g, ''),
-                    description: descMatch ? descMatch[1].replace(/\\n/g, ' ').replace(/\\"/g, '"').replace(/\\\\/g, '') : '',
+                    title: titleMatch[1],
+                    description: descMatch ? descMatch[1] : '',
                     slug: titleMatch[2],
                     thumbnailUrl: thumbMatch ? thumbMatch[1] : ''
                 };
@@ -118,7 +124,7 @@ export async function fetchMovieDetail(lang: string, slug: string) {
 
         const epRegex = /"episodeNumber":(\d+)/g;
         let epMatch;
-        while ((epMatch = epRegex.exec(chunk)) !== null) {
+        while ((epMatch = epRegex.exec(cleanChunk)) !== null) {
             const epNum = parseInt(epMatch[1], 10);
             if (epNum > maxEpisode) maxEpisode = epNum;
         }
@@ -140,10 +146,13 @@ export async function fetchEpisodeData(lang: string, slug: string, episode: stri
     let subtitleUrl = "";
 
     rawData.forEach((chunk: string) => {
-        const videoMatch = chunk.match(/https:\/\/[^"'\s]*?\.m3u8/);
+        // PERBAIKAN FATAL
+        const cleanChunk = chunk.replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/\\\//g, '/');
+        
+        const videoMatch = cleanChunk.match(/https:\/\/[^"'\s]*?\.m3u8/);
         if (videoMatch) videoUrl = videoMatch[0];
 
-        const subMatch = chunk.match(/https:\/\/[^"'\s]*?\.vtt/);
+        const subMatch = cleanChunk.match(/https:\/\/[^"'\s]*?\.vtt/);
         if (subMatch) subtitleUrl = subMatch[0];
     });
 
