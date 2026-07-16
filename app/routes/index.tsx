@@ -29,15 +29,16 @@ export default createRoute(async (c) => {
       )}
 
       <div class="max-w-7xl mx-auto px-4 py-8">
-        <h2 class="text-xl font-bold text-white mb-4">{t(currentLang, 'trending')}</h2>
+        <h2 class="text-xl font-bold text-white mb-6">{t(currentLang, 'trending')}</h2>
         
         {movies.length > 0 ? (
-          <div class="flex overflow-x-auto gap-4 pb-6 hide-scrollbar snap-x">
+          {/* PERBAIKAN: Mengubah Flex Horizontal menjadi Grid agar seluruh film tampil memanjang ke bawah */}
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 pb-6">
             {movies.map((movie) => (
-              <a href={`/detail/${movie.slug}`} class="snap-start shrink-0 w-36 md:w-48 group relative block aspect-[2/3] rounded-md overflow-hidden bg-[#141414] transition-transform duration-300 hover:scale-105">
+              <a href={`/detail/${movie.slug}`} class="group relative block w-full aspect-[2/3] rounded-md overflow-hidden bg-[#141414] transition-transform duration-300 hover:scale-105 shadow-md">
                 <img src={movie.thumbnailUrl} alt={movie.title} class="object-cover w-full h-full" loading="lazy" />
-                <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                  <h3 class="text-xs md:text-sm font-semibold text-white line-clamp-2">{movie.title}</h3>
+                <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">
+                  <h3 class="text-xs md:text-sm font-semibold text-white line-clamp-2 leading-snug">{movie.title}</h3>
                 </div>
               </a>
             ))}
