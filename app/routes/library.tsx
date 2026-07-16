@@ -46,7 +46,7 @@ export default createRoute(async (c) => {
 
   const buildGenreUrl = (genreSlug: string) => {
       const params = new URLSearchParams(searchParams);
-      params.delete('pageToken'); // Jika memfilter ulang, mulai dari awal
+      params.delete('pageToken'); 
       if (genreSlug === '') {
           params.delete('genre'); 
       } else {
@@ -151,7 +151,7 @@ export default createRoute(async (c) => {
         </div>
       )}
 
-      {/* SCRIPT FETCH PAGINASI API REAL-TIME MULTI-FILTER */}
+      {/* SCRIPT FETCH PAGINASI API REAL-TIME (Anti-Bug Regex) */}
       <script dangerouslySetInnerHTML={{__html: `
         document.addEventListener("DOMContentLoaded", function() {
             const btn = document.getElementById('lib-load-more');
@@ -178,36 +178,12 @@ export default createRoute(async (c) => {
                     const json = await res.json();
                     
                     const langData = json?.data?.[lang] || json?.data?.id || json?.data?.en || json?.data?.zh || json?.data;
-                    const rawData = langData?.nextjs_ssr_data || [];
+                    const parsedData = langData?.parsed_data || {};
                     
-                    let newItems = [];
-                    let nextToken = null;
+                    const newItems = parsedData.movies || [];
+                    const nextToken = parsedData.nextPageToken || null;
                     
-                    rawData.forEach(chunk => {
-                        const cleanChunk = chunk.replace(/\\\\"/g, '"').replace(/\\\\\\\\/g, '\\\\').replace(/\\\\\\//g, '/');
-                        const blocks = cleanChunk.split('{"id":"');
-                        
-                        for (let i = 1; i < blocks.length; i++) {
-                            const block = '"id":"' + blocks[i];
-                            const idMatch = block.match(/"id":"(\\\\d+)"/);
-                            const titleMatch = block.match(/"title":"(.*?)"/);
-                            const slugMatch = block.match(/"slug":"(.*?)"/);
-                            const thumbMatch = block.match(/"thumbnailUrl":"(.*?)"/);
-                            
-                            if (idMatch && titleMatch && slugMatch && thumbMatch) {
-                                newItems.push({ id: idMatch[1], title: titleMatch[1], slug: slugMatch[1], thumbnailUrl: thumbMatch[1] });
-                            }
-                        }
-                        
-                        if (!nextToken) {
-                            const tMatch = chunk.match(/(eyJpZCI6[a-zA-Z0-9+\\/=\\-_]+)/);
-                            if (tMatch) nextToken = tMatch[1];
-                        }
-                    });
-                    
-                    const uniqueItems = Array.from(new Map(newItems.map(item => [item.id, item])).values());
-                    
-                    uniqueItems.forEach(movie => {
+                    newItems.forEach(movie => {
                         const a = document.createElement('a');
                         a.href = '/detail/' + movie.slug;
                         a.className = 'group relative block w-full aspect-[2/3] rounded-md overflow-hidden bg-[#141414] transition-transform duration-300 hover:scale-105 shadow-md border border-white/5';
