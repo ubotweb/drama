@@ -11,7 +11,8 @@ export async function fetchApiData(endpoint: string) {
 
     // Parsing data kotor bawaan NextJS dari Shortflix
     rawData.forEach((chunk: string) => {
-        const regex = /{"id":"(\d+)","title":"(.*?)","description":"(.*?)","slug":"(.*?)","thumbnailUrl":"(.*?)"/g;
+        // PERBAIKAN: Menambahkan \\? agar backslash menjadi opsional
+        const regex = /{\\?"id\\?":\\?"(\d+)\\?",\\?"title\\?":\\?"(.*?)\\?",\\?"description\\?":\\?"(.*?)\\?",\\?"slug\\?":\\?"(.*?)\\?",\\?"thumbnailUrl\\?":\\?"(.*?)\\?"/g;
         let match;
         while ((match = regex.exec(chunk)) !== null) {
             extractedItems.push({
@@ -43,9 +44,10 @@ export async function fetchMovieDetail(slug: string) {
     rawData.forEach((chunk: string) => {
         // Deteksi metadata film
         if (!movie) {
-            const titleMatch = chunk.match(/"title":"(.*?)".*?"slug":"(.*?)"/);
-            const descMatch = chunk.match(/"description":"(.*?)"/);
-            const thumbMatch = chunk.match(/"thumbnailUrl":"(.*?)"/);
+            // PERBAIKAN: Menambahkan \\? pada pencarian metadata
+            const titleMatch = chunk.match(/\\?"title\\?":\\?"(.*?)".*?\\?"slug\\?":\\?"(.*?)\\?"/);
+            const descMatch = chunk.match(/\\?"description\\?":\\?"(.*?)\\?"/);
+            const thumbMatch = chunk.match(/\\?"thumbnailUrl\\?":\\?"(.*?)\\?"/);
             
             // Pastikan slug cocok agar tidak salah ambil film rekomendasi
             if (titleMatch && titleMatch[2] === slug) {
@@ -59,7 +61,8 @@ export async function fetchMovieDetail(slug: string) {
         }
 
         // Ekstrak semua episodeNumber untuk mencari total episode sebenarnya
-        const epRegex = /"episodeNumber":(\d+)/g;
+        // PERBAIKAN: Menambahkan \\? pada pencarian episode
+        const epRegex = /\\?"episodeNumber\\?":(\d+)/g;
         let epMatch;
         while ((epMatch = epRegex.exec(chunk)) !== null) {
             const epNum = parseInt(epMatch[1], 10);
