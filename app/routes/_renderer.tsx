@@ -1,10 +1,8 @@
-import { jsxRenderer, useRequestContext } from 'hono/jsx-renderer'
+import { jsxRenderer } from 'hono/jsx-renderer'
 import { t } from '../utils'
 
-export default jsxRenderer(({ children, title }) => {
-  // INILAH CARA YANG BENAR SECARA MUTLAK UNTUK MENGAMBIL CONTEXT DI RENDERER!
-  const c = useRequestContext();
-  const currentLang = c.get('lang') || 'id';
+export default jsxRenderer(({ children, title, lang }) => {
+  const currentLang = (lang as string) || 'id';
 
   return (
     <html lang={currentLang}>
@@ -28,14 +26,26 @@ export default jsxRenderer(({ children, title }) => {
             <a href="/" class="text-2xl font-black text-red-600 tracking-tighter">ALLDRAMA</a>
             <div class="flex items-center gap-4 text-sm font-medium">
               
+              {/* DROPDOWN 17 BAHASA LENGKAP SESUAI API SHORTFLIX */}
               <form action="" method="GET" class="relative">
                 <select name="lang" onchange="this.form.submit()" class="bg-[#262626] text-white border border-white/20 rounded-md px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-red-600 appearance-none text-xs sm:text-sm cursor-pointer">
                   <option value="id" selected={currentLang === 'id'}>🇮🇩 ID</option>
                   <option value="en" selected={currentLang === 'en'}>🇺🇸 EN</option>
+                  <option value="vi" selected={currentLang === 'vi'}>🇻🇳 VI</option>
+                  <option value="th" selected={currentLang === 'th'}>🇹🇭 TH</option>
+                  <option value="es" selected={currentLang === 'es'}>🇪🇸 ES</option>
+                  <option value="de" selected={currentLang === 'de'}>🇩🇪 DE</option>
+                  <option value="pt" selected={currentLang === 'pt'}>🇵🇹 PT</option>
+                  <option value="ms" selected={currentLang === 'ms'}>🇲🇾 MS</option>
+                  <option value="it" selected={currentLang === 'it'}>🇮🇹 IT</option>
                   <option value="zh" selected={currentLang === 'zh'}>🇹🇼 ZH</option>
                   <option value="zh-cn" selected={currentLang === 'zh-cn'}>🇨🇳 ZH-CN</option>
-                  <option value="es" selected={currentLang === 'es'}>🇪🇸 ES</option>
+                  <option value="fr" selected={currentLang === 'fr'}>🇫🇷 FR</option>
                   <option value="ja" selected={currentLang === 'ja'}>🇯🇵 JA</option>
+                  <option value="tr" selected={currentLang === 'tr'}>🇹🇷 TR</option>
+                  <option value="ko" selected={currentLang === 'ko'}>🇰🇷 KO</option>
+                  <option value="ar" selected={currentLang === 'ar'}>🇸🇦 AR</option>
+                  <option value="fil" selected={currentLang === 'fil'}>🇵🇭 FIL</option>
                 </select>
               </form>
 
