@@ -24,7 +24,6 @@ const loadMoreTexts: Record<string, string> = {
 export default createRoute(async (c) => {
   const currentLang = getAppLang(c); 
   
-  // Mengambil Data API dan Menangkap PageToken untuk Paginasi Beranda
   const { movies, nextPageToken } = await fetchCatalog(currentLang, "");
   
   const heroMovie = movies.length > 0 ? movies[Math.floor(Math.random() * movies.length)] : null;
@@ -83,7 +82,6 @@ export default createRoute(async (c) => {
         )}
       </div>
 
-      {/* SCRIPT FETCH PAGINASI API REAL-TIME (Menggunakan Parser Tahan Banting) */}
       <script dangerouslySetInnerHTML={{__html: `
         document.addEventListener("DOMContentLoaded", function() {
             const btn = document.getElementById('load-more-btn');
@@ -128,8 +126,9 @@ export default createRoute(async (c) => {
                             }
                         }
                         
+                        // PARSER TOKEN MENTAH: Mencari eyJpZCI6 di dalam Script JS!
                         if (!nextToken) {
-                            const tMatch = cleanChunk.match(/"[^"]+"\\s*:\\s*"(eyJpZCI6[^"]+)"/);
+                            const tMatch = chunk.match(/(eyJpZCI6[a-zA-Z0-9+\\/=\\-_]+)/);
                             if (tMatch) nextToken = tMatch[1];
                         }
                     });
