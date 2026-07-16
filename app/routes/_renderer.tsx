@@ -1,8 +1,9 @@
-import { jsxRenderer } from 'hono/jsx-renderer'
+import { jsxRenderer, useRequestContext } from 'hono/jsx-renderer'
 import { t } from '../utils'
 
-// PERBAIKAN FATAL: 'c' dipindahkan ke argumen kedua yang merupakan posisi Context sesungguhnya di Hono
-export default jsxRenderer(({ children, title }, c) => {
+export default jsxRenderer(({ children, title }) => {
+  // INILAH CARA YANG BENAR SECARA MUTLAK UNTUK MENGAMBIL CONTEXT DI RENDERER!
+  const c = useRequestContext();
   const currentLang = c.get('lang') || 'id';
 
   return (
