@@ -1,14 +1,16 @@
+import { Hono } from 'hono'
 import { showRoutes } from 'hono/dev'
 import { createApp } from 'honox/server'
 import { getCookie, setCookie } from 'hono/cookie'
 import { verify } from 'hono/jwt'
 
-const app = createApp()
+// 1. Buat instance Hono dasar untuk Middleware
+const baseApp = new Hono()
 
-// Middleware 1: State Manajemen Bahasa Global
-app.use('*', async (c, next) => {
+// 2. Terapkan Middleware DI AWAL (Sebelum HonoX mendaftarkan rute halaman)
+baseApp.use('*', async (c, next) => {
   const urlLang = c.req.query('lang');
-  let currentLang = getCookie(c, 'app_lang') || 'id'; // Default Indonesia
+  let currentLang = getCookie(c, 'app_lang') || 'id'; 
   
   if (urlLang) {
     currentLang = urlLang;
@@ -16,11 +18,11 @@ app.use('*', async (c, next) => {
   }
   
   c.set('lang', currentLang);
-  await next()
+  await next();
 })
 
-// Middleware 2: Autentikasi Global menggunakan JWT HS256
-app.use('*', async (c, next) => {
+// 3. Terapkan Middleware Autentikasi
+baseApp.use('*', async (c, next) => {
   const sessionToken = getCookie(c, 'session')
   if (sessionToken) {
     try {
@@ -34,6 +36,9 @@ app.use('*', async (c, next) => {
   }
   await next()
 })
+
+// 4. Masukkan baseApp yang sudah berisi middleware ke dalam HonoX createApp!
+const app = createApp({ app: baseApp })
 
 showRoutes(app)
 export default app
