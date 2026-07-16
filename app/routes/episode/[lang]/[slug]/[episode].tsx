@@ -2,16 +2,12 @@ import { createRoute } from 'honox/factory'
 import { fetchEpisodeData, fetchMovieDetail, t } from '../../../../utils'
 
 export default createRoute(async (c) => {
-  // Mengambil bahasa mutlak dari struktur URL
   const lang = c.req.param('lang'); 
   const slug = c.req.param('slug');
   const episodeStr = c.req.param('episode');
   const episode = parseInt(episodeStr, 10);
   const user = c.get('user');
 
-  // ==========================================================
-  // LOGIKA BISNIS LIMITASI EPISODE (Dengan Teks i18n Dinamis)
-  // ==========================================================
   if (!user && episode > 10) {
     return c.render(
       <div class="min-h-screen flex items-center justify-center px-4 pt-16">
@@ -22,7 +18,7 @@ export default createRoute(async (c) => {
           <a href="/login" class="block w-full bg-red-600 hover:bg-red-700 text-white py-3.5 rounded-lg font-bold transition">{t(lang, 'login')}</a>
         </div>
       </div>,
-      { title: `AllDrama - ${t(lang, 'limit')}` }
+      { title: `AllDrama - ${t(lang, 'limit')}`, lang: lang }
     );
   }
 
@@ -50,21 +46,18 @@ export default createRoute(async (c) => {
             </div>
           </div>
         </div>,
-        { title: `AllDrama - ${t(lang, 'locked')}` }
+        { title: `AllDrama - ${t(lang, 'locked')}`, lang: lang }
       );
     }
   }
 
-  // ==========================================================
-  // JIKA LOLOS LIMIT, TAMPILKAN VIDEO PLAYER BERSERTA SUBTITLE
-  // ==========================================================
   const media = await fetchEpisodeData(lang, slug, episodeStr);
   const detailData = await fetchMovieDetail(lang, slug);
   const totalEpisodes = detailData?.maxEpisode || episode + 5; 
   const episodes = Array.from({ length: totalEpisodes }, (_, i) => i + 1);
   
   if (!media || !media.videoUrl) {
-    return c.render(<div class="text-center mt-32 text-white">{t(lang, 'no_video')}</div>);
+    return c.render(<div class="text-center mt-32 text-white">{t(lang, 'no_video')}</div>, { lang: lang });
   }
 
   return c.render(
@@ -113,6 +106,6 @@ export default createRoute(async (c) => {
         }
       `}}></script>
     </div>,
-    { title: `${t(lang, 'episode')} ${episode} - AllDrama` }
+    { title: `${t(lang, 'episode')} ${episode} - AllDrama`, lang: lang }
   )
 })
