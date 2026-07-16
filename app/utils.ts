@@ -4,14 +4,17 @@ export async function fetchApiData(endpoint: string) {
     const res = await fetch(`${API_BASE}${endpoint}`);
     if (!res.ok) return [];
     const json = await res.json();
-    if (json.status !== "success" || !json.data || !json.data.id || !json.data.id.nextjs_ssr_data) return [];
+    if (json.status !== "success" || !json.data) return [];
     
-    const rawData = json.data.id.nextjs_ssr_data;
+    // DINAMIS: Mendeteksi key bahasa (id/en/ch) secara otomatis dari respon API
+    const langKey = Object.keys(json.data)[0];
+    if (!json.data[langKey] || !json.data[langKey].nextjs_ssr_data) return [];
+
+    const rawData = json.data[langKey].nextjs_ssr_data;
     const extractedItems: any[] = [];
 
     // Parsing data kotor bawaan NextJS dari Shortflix
     rawData.forEach((chunk: string) => {
-        // Regex dengan opsional backslash (\?)
         const regex = /{\\?"id\\?":\\?"(\d+)\\?",\\?"title\\?":\\?"(.*?)\\?",\\?"description\\?":\\?"(.*?)\\?",\\?"slug\\?":\\?"(.*?)\\?",\\?"thumbnailUrl\\?":\\?"(.*?)\\?"/g;
         let match;
         while ((match = regex.exec(chunk)) !== null) {
@@ -30,14 +33,18 @@ export async function fetchApiData(endpoint: string) {
     return uniqueItems;
 }
 
-// Mengekstrak total episode secara dinamis dari SSR
-export async function fetchMovieDetail(slug: string) {
-    const res = await fetch(`${API_BASE}/detail/id/${slug}`);
+// FUNGSI BARU: Mengekstrak total episode secara dinamis dari SSR
+// (Ditambahkan parameter lang)
+export async function fetchMovieDetail(lang: string, slug: string) {
+    const res = await fetch(`${API_BASE}/detail/${lang}/${slug}`);
     if (!res.ok) return null;
     const json = await res.json();
-    if (json.status !== "success" || !json.data || !json.data.id || !json.data.id.nextjs_ssr_data) return null;
+    if (json.status !== "success" || !json.data) return null;
 
-    const rawData = json.data.id.nextjs_ssr_data;
+    const langKey = Object.keys(json.data)[0];
+    if (!json.data[langKey] || !json.data[langKey].nextjs_ssr_data) return null;
+
+    const rawData = json.data[langKey].nextjs_ssr_data;
     let movie: any = null;
     let maxEpisode = 0;
 
@@ -73,62 +80,67 @@ export async function fetchMovieDetail(slug: string) {
     return { movie, maxEpisode };
 }
 
-// Mengekstrak Data Video Spesifik Berdasarkan Episode
-export async function fetchEpisodeData(slug: string, episode: string) {
-    const res = await fetch(`${API_BASE}/episode/id/${slug}/${episode}`);
+export async function fetchEpisodeData(lang: string, slug: string, episode: string) {
+    // Memanggil API dengan struktur lengkap: /api/episode/{lang}/{slug}/{episode}
+    const res = await fetch(`${API_BASE}/episode/${lang}/${slug}/${episode}`);
     if (!res.ok) return null;
     const json = await res.json();
-    if (json.status !== "success" || !json.data || !json.data.id || !json.data.id.nextjs_ssr_data) return null;
+    if (json.status !== "success" || !json.data) return null;
 
-    const rawData = json.data.id.nextjs_ssr_data;
+    const langKey = Object.keys(json.data)[0];
+    if (!json.data[langKey] || !json.data[langKey].nextjs_ssr_data) return null;
+
+    const rawData = json.data[langKey].nextjs_ssr_data;
+    const fullText = rawData.join("").replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+
     let videoUrl = "";
     let subtitleUrl = "";
-    
-    // Pastikan kita mencari episode dengan bentuk angka (Integer)
     const targetEp = parseInt(episode, 10);
 
-    rawData.forEach((chunk: string) => {
-        // Hapus escape backslash (\") agar format JSON lebih bersih dan mudah di-regex
-        const cleanChunk = chunk.replace(/\\"/g, '"');
+    // Kunci pencarian yang ketat (Mencari di mana episode ini persisnya berada di dalam SSR)
+    const epIdentifier = `"episodeNumber":${targetEp}`;
+    const epIdentifierSpace = `"episodeNumber": ${targetEp}`; 
 
-        // Pola pencarian ketat agar M3U8 yang diambil PASTI milik episode yang sedang diklik.
-        // (?!\d) mencegah angka 2 me-match angka 20 atau 21
-        // [^{}]*? memastikan kita hanya mencari URL di dalam blok obyek JSON yang sama.
-        const epPattern = `"episodeNumber":\\s*${targetEp}(?!\\d)`;
-        const vidPattern = `"videoUrl":\\s*"(https:\/\/[^"\\s]*?\\.m3u8)"`;
-        const subPattern = `"subtitleUrl":\\s*"(https:\/\/[^"\\s]*?\\.vtt)"`;
+    let startIndex = fullText.indexOf(epIdentifier);
+    if (startIndex === -1) startIndex = fullText.indexOf(epIdentifierSpace);
 
-        // 1. Cari M3U8 (Kemungkinan A: Nomor Episode disebut duluan di data JSON)
-        const vidRegexA = new RegExp(`${epPattern}[^{}]*?${vidPattern}`);
-        const matchVidA = cleanChunk.match(vidRegexA);
-        if (matchVidA) videoUrl = matchVidA[1];
+    // Jika blok untuk episode ini ditemukan, kita HANYA mencari .m3u8 di sekitar blok ini saja
+    if (startIndex !== -1) {
+        // Ambil potongan teks spesifik untuk obyek episode ini (sekitar 3000 karakter ke depan)
+        const searchArea = fullText.substring(startIndex, startIndex + 3000);
+        
+        const vidMatch = searchArea.match(/https:\/\/[^"'\s]*?\.m3u8/);
+        if (vidMatch) videoUrl = vidMatch[0];
 
-        // 1. Cari M3U8 (Kemungkinan B: URL Video disebut duluan sebelum Nomor Episode)
-        const vidRegexB = new RegExp(`${vidPattern}[^{}]*?${epPattern}`);
-        const matchVidB = cleanChunk.match(vidRegexB);
-        if (matchVidB && !videoUrl) videoUrl = matchVidB[1];
+        const subMatch = searchArea.match(/https:\/\/[^"'\s]*?\.vtt/);
+        if (subMatch) subtitleUrl = subMatch[0];
+    }
 
-        // 2. Cari VTT / Subtitle (Kemungkinan A & B)
-        const subRegexA = new RegExp(`${epPattern}[^{}]*?${subPattern}`);
-        const matchSubA = cleanChunk.match(subRegexA);
-        if (matchSubA) subtitleUrl = matchSubA[1];
-
-        const subRegexB = new RegExp(`${subPattern}[^{}]*?${epPattern}`);
-        const matchSubB = cleanChunk.match(subRegexB);
-        if (matchSubB && !subtitleUrl) subtitleUrl = matchSubB[1];
-    });
-
-    // Fallback Darurat: Jika karena suatu alasan struktur JSON berubah drastis 
-    // dan gagal ditemukan, fallback mengambil .m3u8 dan .vtt apa pun yang ada agar player tidak blank.
+    // FALLBACK AMAN: Jika objek NextJS diputarbalikkan struktur array-nya
     if (!videoUrl) {
-        rawData.forEach((chunk: string) => {
-            const cleanChunk = chunk.replace(/\\"/g, '"');
-            const fallbackVid = cleanChunk.match(/https:\/\/[^"'\s]*?\.m3u8/);
-            if (fallbackVid && !videoUrl) videoUrl = fallbackVid[0];
-            
-            const fallbackSub = cleanChunk.match(/https:\/\/[^"'\s]*?\.vtt/);
-            if (fallbackSub && !subtitleUrl) subtitleUrl = fallbackSub[0];
-        });
+        const parts = fullText.split('"episodeNumber":');
+        for (let i = 1; i < parts.length; i++) {
+            const part = parts[i];
+            const epMatch = part.match(/^\s*(\d+)/);
+            if (epMatch && parseInt(epMatch[1], 10) === targetEp) {
+                const vidMatchAfter = part.match(/https:\/\/[^"'\s]*?\.m3u8/);
+                if (vidMatchAfter) videoUrl = vidMatchAfter[0];
+                
+                const subMatchAfter = part.match(/https:\/\/[^"'\s]*?\.vtt/);
+                if (subMatchAfter) subtitleUrl = subMatchAfter[0];
+                
+                if (videoUrl) break;
+            }
+        }
+    }
+
+    // FALLBACK TERAKHIR: Agar player tidak hitam sama sekali jika JSON rusak
+    if (!videoUrl) {
+        const fallbackVid = fullText.match(/https:\/\/[^"'\s]*?\.m3u8/);
+        if (fallbackVid) videoUrl = fallbackVid[0];
+        
+        const fallbackSub = fullText.match(/https:\/\/[^"'\s]*?\.vtt/);
+        if (fallbackSub) subtitleUrl = fallbackSub[0];
     }
 
     return { videoUrl, subtitleUrl };
