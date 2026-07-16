@@ -69,70 +69,93 @@ export async function verifyPassword(password: string, storedHash: string) {
 }
 
 // =====================================================================
-// API FETCHERS (TERMASUK GENRES ARRAY MURNI & LIBRARY SEARCH PARAMS)
+// API FETCHERS (DENGAN PENANGKAP PAGE_TOKEN UTK PAGINASI)
 // =====================================================================
 
 export async function fetchGenres(lang: string) {
-    const res = await fetch(`${API_BASE}/genres/${lang}`);
-    if (!res.ok) return [];
-    const json = await res.json();
-    
-    const langData = json?.data?.[lang] || json?.data?.id || json?.data?.en || json?.data?.zh || json?.data;
-    // PERBAIKAN FATAL: Membaca Object Data Array JSON secara langsung
-    if (!langData || !langData.data) return [];
-    
-    return Array.isArray(langData.data) ? langData.data : [];
+    try {
+        const res = await fetch(`${API_BASE}/genres/${lang}`);
+        if (!res.ok) return [];
+        const json = await res.json();
+        const langData = json?.data?.[lang] || json?.data?.id || json?.data?.en || json?.data?.zh || json?.data;
+        if (!langData || !langData.data) return [];
+        return Array.isArray(langData.data) ? langData.data : [];
+    } catch(e) {
+        return [];
+    }
 }
 
 export async function fetchLibrary(lang: string, searchParams: string = '') {
-    // PERBAIKAN FATAL: Mengirimkan string pencarian (?provider=flixreels) ke Worker API!
-    const res = await fetch(`${API_BASE}/library/${lang}${searchParams}`);
-    if (!res.ok) return [];
-    const json = await res.json();
-    
-    const langData = json?.data?.[lang] || json?.data?.id || json?.data?.en || json?.data?.zh || json?.data;
-    if (!langData || !langData.nextjs_ssr_data) return [];
-    
-    const rawData = langData.nextjs_ssr_data;
-    const extractedItems: any[] = [];
+    try {
+        const query = searchParams && !searchParams.startsWith('?') ? `?${searchParams}` : searchParams;
+        const res = await fetch(`${API_BASE}/library/${lang}${query}`);
+        if (!res.ok) return { movies: [], nextPageToken: null };
+        const json = await res.json();
+        
+        const langData = json?.data?.[lang] || json?.data?.id || json?.data?.en || json?.data?.zh || json?.data;
+        if (!langData || !langData.nextjs_ssr_data) return { movies: [], nextPageToken: null };
+        
+        const rawData = langData.nextjs_ssr_data;
+        const extractedItems: any[] = [];
+        let nextPageToken: string | null = null;
 
-    rawData.forEach((chunk: string) => {
-        const cleanChunk = chunk.replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/\\\//g, '/');
-        const regex = /"id":"(\d+)","title":"(.*?)","description":"(.*?)","slug":"(.*?)","thumbnailUrl":"(.*?)"/g;
-        let match;
-        while ((match = regex.exec(cleanChunk)) !== null) {
-            extractedItems.push({
-                id: match[1], title: match[2], description: match[3], slug: match[4], thumbnailUrl: match[5]
-            });
-        }
-    });
+        rawData.forEach((chunk: string) => {
+            const cleanChunk = chunk.replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/\\\//g, '/');
+            const regex = /"id":"(\d+)","title":"(.*?)","description":"(.*?)","slug":"(.*?)","thumbnailUrl":"(.*?)"/g;
+            let match;
+            while ((match = regex.exec(cleanChunk)) !== null) {
+                extractedItems.push({
+                    id: match[1], title: match[2], description: match[3], slug: match[4], thumbnailUrl: match[5]
+                });
+            }
+            
+            // PENANGKAP PAGE_TOKEN CERDAS (Mencari kunci pagination dari API Shortflix)
+            if (!nextPageToken) {
+                const tokenMatch = cleanChunk.match(/"(?:nextPageToken|pageToken)"\s*:\s*"([^"]+)"/);
+                if (tokenMatch) nextPageToken = tokenMatch[1];
+            }
+        });
 
-    return Array.from(new Map(extractedItems.map(item => [item.id, item])).values());
+        const uniqueMovies = Array.from(new Map(extractedItems.map(item => [item.id, item])).values());
+        return { movies: uniqueMovies, nextPageToken };
+    } catch(e) {
+        return { movies: [], nextPageToken: null };
+    }
 }
 
 export async function fetchCatalog(lang: string) {
-    const res = await fetch(`${API_BASE}/catalog/${lang}`);
-    if (!res.ok) return [];
-    const json = await res.json();
-    
-    const langData = json?.data?.[lang] || json?.data?.id || json?.data?.en || json?.data?.zh || json?.data;
-    if (!langData || !langData.nextjs_ssr_data) return [];
-    
-    const rawData = langData.nextjs_ssr_data;
-    const extractedItems: any[] = [];
+    try {
+        const res = await fetch(`${API_BASE}/catalog/${lang}`);
+        if (!res.ok) return { movies: [], nextPageToken: null };
+        const json = await res.json();
+        
+        const langData = json?.data?.[lang] || json?.data?.id || json?.data?.en || json?.data?.zh || json?.data;
+        if (!langData || !langData.nextjs_ssr_data) return { movies: [], nextPageToken: null };
+        
+        const rawData = langData.nextjs_ssr_data;
+        const extractedItems: any[] = [];
+        let nextPageToken: string | null = null;
 
-    rawData.forEach((chunk: string) => {
-        const cleanChunk = chunk.replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/\\\//g, '/');
-        const regex = /"id":"(\d+)","title":"(.*?)","description":"(.*?)","slug":"(.*?)","thumbnailUrl":"(.*?)"/g;
-        let match;
-        while ((match = regex.exec(cleanChunk)) !== null) {
-            extractedItems.push({
-                id: match[1], title: match[2], description: match[3], slug: match[4], thumbnailUrl: match[5]
-            });
-        }
-    });
+        rawData.forEach((chunk: string) => {
+            const cleanChunk = chunk.replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/\\\//g, '/');
+            const regex = /"id":"(\d+)","title":"(.*?)","description":"(.*?)","slug":"(.*?)","thumbnailUrl":"(.*?)"/g;
+            let match;
+            while ((match = regex.exec(cleanChunk)) !== null) {
+                extractedItems.push({
+                    id: match[1], title: match[2], description: match[3], slug: match[4], thumbnailUrl: match[5]
+                });
+            }
+            if (!nextPageToken) {
+                const tokenMatch = cleanChunk.match(/"(?:nextPageToken|pageToken)"\s*:\s*"([^"]+)"/);
+                if (tokenMatch) nextPageToken = tokenMatch[1];
+            }
+        });
 
-    return Array.from(new Map(extractedItems.map(item => [item.id, item])).values());
+        const uniqueMovies = Array.from(new Map(extractedItems.map(item => [item.id, item])).values());
+        return { movies: uniqueMovies, nextPageToken };
+    } catch(e) {
+        return { movies: [], nextPageToken: null };
+    }
 }
 
 export async function fetchMovieDetail(lang: string, slug: string) {
