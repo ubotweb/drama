@@ -10,7 +10,6 @@ export default createRoute(async (c) => {
   const currentSort = c.req.query('sortBy') || '';
   const currentGenres = c.req.queries('genre') || []; 
   
-  // Mengambil Data API dan Menangkap PageToken 
   const { movies, nextPageToken } = await fetchLibrary(lang, searchParams);
   const rawGenres = await fetchGenres(lang);
   
@@ -73,7 +72,6 @@ export default createRoute(async (c) => {
   return c.render(
     <div class="max-w-7xl mx-auto px-4 pt-24 pb-12 min-h-screen">
       
-      {/* HEADER & SORTING */}
       <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b border-white/10 pb-6">
         <h1 class="text-3xl md:text-4xl font-extrabold text-white border-l-4 border-red-600 pl-4">{t(lang, 'library')}</h1>
         
@@ -91,7 +89,6 @@ export default createRoute(async (c) => {
         </div>
       </div>
       
-      {/* FILTER PROVIDERS */}
       <div class="mb-6">
           <h3 class="text-gray-400 text-sm font-bold uppercase tracking-wider mb-3">Sumber Provider</h3>
           <div class="flex overflow-x-auto gap-3 pb-2 hide-scrollbar snap-x">
@@ -103,7 +100,6 @@ export default createRoute(async (c) => {
           </div>
       </div>
 
-      {/* FILTER GENRES */}
       <div class="mb-10">
           <h3 class="text-gray-400 text-sm font-bold uppercase tracking-wider mb-3">Kategori Genre (Bisa Pilih Banyak)</h3>
           <div class="flex flex-wrap gap-2 md:gap-3">
@@ -124,7 +120,6 @@ export default createRoute(async (c) => {
           </div>
       </div>
 
-      {/* GRID FILM PUSTAKA */}
       {movies.length > 0 ? (
         <>
             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4" id="library-grid">
@@ -138,7 +133,6 @@ export default createRoute(async (c) => {
             ))}
             </div>
 
-            {/* TOMBOL API FETCH LOAD MORE */}
             {nextPageToken && (
                 <div class="flex justify-center mt-12 mb-4">
                     <button id="lib-load-more" data-token={nextPageToken} class="bg-transparent border-2 border-red-600 text-red-500 hover:bg-red-600 hover:text-white px-10 py-3 rounded-full font-bold transition-all shadow-lg flex items-center gap-2">
@@ -156,7 +150,7 @@ export default createRoute(async (c) => {
         </div>
       )}
 
-      {/* SCRIPT CLIENT-SIDE PAGINASI YANG TERHUBUNG API */}
+      {/* SCRIPT FETCH PAGINASI API REAL-TIME MULTI-FILTER */}
       <script dangerouslySetInnerHTML={{__html: `
         document.addEventListener("DOMContentLoaded", function() {
             const btn = document.getElementById('lib-load-more');
@@ -173,7 +167,7 @@ export default createRoute(async (c) => {
 
                 try {
                     const urlParams = new URLSearchParams(window.location.search);
-                    urlParams.set('pageToken', token);
+                    urlParams.set('pageToken', token); // Meneruskan PageToken
                     
                     const lang = document.documentElement.lang || 'id';
                     const apiBase = "https://dramapi.ubot.web.id/api";
@@ -190,14 +184,22 @@ export default createRoute(async (c) => {
                     
                     rawData.forEach(chunk => {
                         const cleanChunk = chunk.replace(/\\\\"/g, '"').replace(/\\\\\\\\/g, '\\\\').replace(/\\\\\\//g, '/');
-                        const regex = /"id":"(\\\\d+)","title":"(.*?)","description":"(.*?)","slug":"(.*?)","thumbnailUrl":"(.*?)"/g;
-                        let match;
-                        while ((match = regex.exec(cleanChunk)) !== null) {
-                            newItems.push({ id: match[1], title: match[2], description: match[3], slug: match[4], thumbnailUrl: match[5] });
+                        const blocks = cleanChunk.split('{"id":"');
+                        
+                        for (let i = 1; i < blocks.length; i++) {
+                            const block = '"id":"' + blocks[i];
+                            const idMatch = block.match(/"id":"(\\\\d+)"/);
+                            const titleMatch = block.match(/"title":"(.*?)"/);
+                            const slugMatch = block.match(/"slug":"(.*?)"/);
+                            const thumbMatch = block.match(/"thumbnailUrl":"(.*?)"/);
+                            
+                            if (idMatch && titleMatch && slugMatch && thumbMatch) {
+                                newItems.push({ id: idMatch[1], title: titleMatch[1], slug: slugMatch[1], thumbnailUrl: thumbMatch[1] });
+                            }
                         }
                         
                         if (!nextToken) {
-                            const tMatch = cleanChunk.match(/"(?:nextPageToken|pageToken)"\\s*:\\s*"([^"]+)"/);
+                            const tMatch = cleanChunk.match(/"[^"]+"\\s*:\\s*"(eyJpZCI6[^"]+)"/);
                             if (tMatch) nextToken = tMatch[1];
                         }
                     });
