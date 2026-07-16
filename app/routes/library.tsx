@@ -4,19 +4,18 @@ import { fetchLibrary, fetchGenres, t, getAppLang } from '../utils'
 export default createRoute(async (c) => {
   const lang = getAppLang(c);
   
-  // Tangkap seluruh query (bisa berupa array jika ada beberapa '?genre=')
   const url = new URL(c.req.url);
   const searchParams = url.search; 
   const currentProvider = c.req.query('provider') || '';
   const currentSort = c.req.query('sortBy') || '';
-  const currentGenres = c.req.queries('genre') || []; // Array untuk multi-select genre
+  const currentGenres = c.req.queries('genre') || []; 
   
-  const movies = await fetchLibrary(lang, searchParams);
+  // Mengambil Data API dan Menangkap PageToken 
+  const { movies, nextPageToken } = await fetchLibrary(lang, searchParams);
   const rawGenres = await fetchGenres(lang);
   
-  // Daftar 15 Provider Mutlak sesuai instruksi Anda
   const providers = [
-    { id: '', name: 'All Providers' },
+    { id: '', name: 'Semua Provider' },
     { id: 'flickreels', name: 'Flickreels' },
     { id: 'reelshort', name: 'Reelshort' },
     { id: 'dramashorts', name: 'DramaShorts' },
@@ -34,7 +33,6 @@ export default createRoute(async (c) => {
     { id: 'kalostv', name: 'KalosTV' }
   ];
 
-  // Daftar Sorting
   const sortOptions = [
     { id: '', name: 'Default' },
     { id: 'last_episode_at', name: 'Terbaru Ditambahkan' },
@@ -47,20 +45,17 @@ export default createRoute(async (c) => {
     { id: 'rating_count', name: 'Rating Tertinggi' }
   ];
 
-  // Fungsi Toggle Multi-Genre
   const buildGenreUrl = (genreSlug: string) => {
       const params = new URLSearchParams(searchParams);
       if (genreSlug === '') {
-          params.delete('genre'); // Tombol 'Semua' menghapus seluruh filter genre
+          params.delete('genre'); 
       } else {
           const existingGenres = params.getAll('genre');
-          params.delete('genre'); // Hapus semua dulu
+          params.delete('genre'); 
           
           if (existingGenres.includes(genreSlug)) {
-              // Jika sudah ada, berarti user ingin membatalkan pilihan ini (Toggle Off)
               existingGenres.filter(g => g !== genreSlug).forEach(g => params.append('genre', g));
           } else {
-              // Jika belum ada, tambahkan ke dalam filter (Toggle On)
               existingGenres.forEach(g => params.append('genre', g));
               params.append('genre', genreSlug);
           }
@@ -75,8 +70,6 @@ export default createRoute(async (c) => {
       return `/library?${params.toString()}`;
   };
 
-  const PAGE_SIZE = 24; // Paginasi Profesional: Tampilkan 24 film per klik load
-
   return c.render(
     <div class="max-w-7xl mx-auto px-4 pt-24 pb-12 min-h-screen">
       
@@ -84,14 +77,11 @@ export default createRoute(async (c) => {
       <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b border-white/10 pb-6">
         <h1 class="text-3xl md:text-4xl font-extrabold text-white border-l-4 border-red-600 pl-4">{t(lang, 'library')}</h1>
         
-        {/* DROPDOWN SORTING */}
         <div class="w-full md:w-auto flex items-center gap-3">
            <span class="text-sm text-gray-400 font-semibold uppercase tracking-wider">Urutkan:</span>
            <form action="" method="GET" class="relative m-0 p-0 flex-1 md:flex-none">
-             {/* Pertahankan query provider dan genre saat mensorting */}
              {currentProvider && <input type="hidden" name="provider" value={currentProvider} />}
              {currentGenres.map(g => <input type="hidden" name="genre" value={g} />)}
-             
              <select name="sortBy" onchange="this.form.submit()" class="w-full bg-[#1a1a1a] text-white border border-white/20 rounded-md px-4 py-2 focus:outline-none focus:border-red-600 appearance-none text-sm cursor-pointer font-medium">
                 {sortOptions.map(sort => (
                    <option value={sort.id} selected={currentSort === sort.id}>{sort.name}</option>
@@ -113,7 +103,7 @@ export default createRoute(async (c) => {
           </div>
       </div>
 
-      {/* FILTER GENRES (MULTI-SELECTABLE) */}
+      {/* FILTER GENRES */}
       <div class="mb-10">
           <h3 class="text-gray-400 text-sm font-bold uppercase tracking-wider mb-3">Kategori Genre (Bisa Pilih Banyak)</h3>
           <div class="flex flex-wrap gap-2 md:gap-3">
@@ -134,12 +124,12 @@ export default createRoute(async (c) => {
           </div>
       </div>
 
-      {/* GRID FILM PUSTAKA (PAGINASI LOAD MORE) */}
+      {/* GRID FILM PUSTAKA */}
       {movies.length > 0 ? (
         <>
             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4" id="library-grid">
-            {movies.map((movie, index) => (
-                <a href={`/detail/${movie.slug}`} class={`lib-card group relative block w-full aspect-[2/3] rounded-md overflow-hidden bg-[#141414] transition-transform duration-300 hover:scale-105 shadow-md border border-white/5 ${index >= PAGE_SIZE ? 'hidden' : ''}`}>
+            {movies.map((movie) => (
+                <a href={`/detail/${movie.slug}`} class={`group relative block w-full aspect-[2/3] rounded-md overflow-hidden bg-[#141414] transition-transform duration-300 hover:scale-105 shadow-md border border-white/5`}>
                 <img src={movie.thumbnailUrl} alt={movie.title} class="object-cover w-full h-full" loading="lazy" />
                 <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">
                     <h3 class="text-xs md:text-sm font-semibold text-white line-clamp-2 leading-snug">{movie.title}</h3>
@@ -148,11 +138,11 @@ export default createRoute(async (c) => {
             ))}
             </div>
 
-            {/* TOMBOL LOAD MORE PROFESIONAL */}
-            {movies.length > PAGE_SIZE && (
+            {/* TOMBOL API FETCH LOAD MORE */}
+            {nextPageToken && (
                 <div class="flex justify-center mt-12 mb-4">
-                    <button id="lib-load-more" class="bg-transparent border-2 border-red-600 text-red-500 hover:bg-red-600 hover:text-white px-10 py-3 rounded-full font-bold transition-all shadow-lg flex items-center gap-2">
-                        <span>Tampilkan Lebih Banyak ({movies.length} Judul)</span>
+                    <button id="lib-load-more" data-token={nextPageToken} class="bg-transparent border-2 border-red-600 text-red-500 hover:bg-red-600 hover:text-white px-10 py-3 rounded-full font-bold transition-all shadow-lg flex items-center gap-2">
+                        <span>Tampilkan Lebih Banyak Data</span>
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </button>
                 </div>
@@ -166,25 +156,77 @@ export default createRoute(async (c) => {
         </div>
       )}
 
-      {/* SCRIPT CLIENT-SIDE PAGINASI */}
+      {/* SCRIPT CLIENT-SIDE PAGINASI YANG TERHUBUNG API */}
       <script dangerouslySetInnerHTML={{__html: `
         document.addEventListener("DOMContentLoaded", function() {
-          const loadMoreBtn = document.getElementById('lib-load-more');
-          if (!loadMoreBtn) return;
-          
-          const increment = 24; // Render 24 item setiap kali tombol ditekan
-          
-          loadMoreBtn.addEventListener('click', function() {
-            const hiddenCards = document.querySelectorAll('.lib-card.hidden');
-            for(let i = 0; i < increment && i < hiddenCards.length; i++) {
-              hiddenCards[i].classList.remove('hidden');
-            }
-            
-            // Sembunyikan tombol jika semua film sudah dirender
-            if (document.querySelectorAll('.lib-card.hidden').length === 0) {
-              loadMoreBtn.style.display = 'none';
-            }
-          });
+            const btn = document.getElementById('lib-load-more');
+            const grid = document.getElementById('library-grid');
+            if (!btn || !grid) return;
+
+            btn.addEventListener('click', async function() {
+                const token = btn.getAttribute('data-token');
+                if (!token) return;
+
+                const originalText = btn.innerHTML;
+                btn.innerHTML = 'Memuat Data...';
+                btn.disabled = true;
+
+                try {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    urlParams.set('pageToken', token);
+                    
+                    const lang = document.documentElement.lang || 'id';
+                    const apiBase = "https://dramapi.ubot.web.id/api";
+                    const fetchUrl = apiBase + '/library/' + lang + '?' + urlParams.toString();
+                    
+                    const res = await fetch(fetchUrl);
+                    const json = await res.json();
+                    
+                    const langData = json?.data?.[lang] || json?.data?.id || json?.data?.en || json?.data?.zh || json?.data;
+                    const rawData = langData?.nextjs_ssr_data || [];
+                    
+                    let newItems = [];
+                    let nextToken = null;
+                    
+                    rawData.forEach(chunk => {
+                        const cleanChunk = chunk.replace(/\\\\"/g, '"').replace(/\\\\\\\\/g, '\\\\').replace(/\\\\\\//g, '/');
+                        const regex = /"id":"(\\\\d+)","title":"(.*?)","description":"(.*?)","slug":"(.*?)","thumbnailUrl":"(.*?)"/g;
+                        let match;
+                        while ((match = regex.exec(cleanChunk)) !== null) {
+                            newItems.push({ id: match[1], title: match[2], description: match[3], slug: match[4], thumbnailUrl: match[5] });
+                        }
+                        
+                        if (!nextToken) {
+                            const tMatch = cleanChunk.match(/"(?:nextPageToken|pageToken)"\\s*:\\s*"([^"]+)"/);
+                            if (tMatch) nextToken = tMatch[1];
+                        }
+                    });
+                    
+                    const uniqueItems = Array.from(new Map(newItems.map(item => [item.id, item])).values());
+                    
+                    uniqueItems.forEach(movie => {
+                        const a = document.createElement('a');
+                        a.href = '/detail/' + movie.slug;
+                        a.className = 'group relative block w-full aspect-[2/3] rounded-md overflow-hidden bg-[#141414] transition-transform duration-300 hover:scale-105 shadow-md border border-white/5';
+                        a.innerHTML = '<img src="' + movie.thumbnailUrl + '" alt="' + movie.title.replace(/"/g, '&quot;') + '" class="object-cover w-full h-full" loading="lazy" />' +
+                                      '<div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">' +
+                                      '<h3 class="text-xs md:text-sm font-semibold text-white line-clamp-2 leading-snug">' + movie.title + '</h3></div>';
+                        grid.appendChild(a);
+                    });
+                    
+                    if (nextToken) {
+                        btn.setAttribute('data-token', nextToken);
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                    } else {
+                        btn.style.display = 'none';
+                    }
+                    
+                } catch (e) {
+                    btn.innerHTML = 'Gagal memuat. Coba lagi.';
+                    btn.disabled = false;
+                }
+            });
         });
       `}}></script>
     </div>,
