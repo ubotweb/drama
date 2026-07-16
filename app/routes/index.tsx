@@ -1,7 +1,6 @@
 import { createRoute } from 'honox/factory'
 import { fetchLibrary, t, getAppLang } from '../utils'
 
-// Kamus kecil khusus untuk tombol Load More agar tidak perlu mengganggu utils.ts
 const loadMoreTexts: Record<string, string> = {
   'id': 'Tampilkan Lebih Banyak',
   'en': 'Load More',
@@ -28,7 +27,6 @@ export default createRoute(async (c) => {
   
   const heroMovie = movies.length > 0 ? movies[Math.floor(Math.random() * movies.length)] : null;
   
-  // Variabel untuk Paginasi Load More
   const INITIAL_COUNT = 12; 
   const loadMoreBtnText = loadMoreTexts[currentLang] || 'Load More';
 
@@ -60,7 +58,6 @@ export default createRoute(async (c) => {
           <>
             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 pb-6" id="movies-grid">
               {movies.map((movie, index) => (
-                {/* Film setelah index 11 akan otomatis diberi class 'hidden' */}
                 <a href={`/detail/${movie.slug}`} class={`movie-card group relative block w-full aspect-[2/3] rounded-md overflow-hidden bg-[#141414] transition-transform duration-300 hover:scale-105 shadow-md border border-white/5 ${index >= INITIAL_COUNT ? 'hidden' : ''}`}>
                   <img src={movie.thumbnailUrl} alt={movie.title} class="object-cover w-full h-full" loading="lazy" />
                   <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">
@@ -70,7 +67,6 @@ export default createRoute(async (c) => {
               ))}
             </div>
 
-            {/* Tombol Load More hanya muncul jika total film melebihi INITIAL_COUNT (12) */}
             {movies.length > INITIAL_COUNT && (
               <div class="flex justify-center mt-4 mb-12">
                 <button id="load-more-btn" class="bg-[#1a1a1a] hover:bg-red-600 text-white px-8 py-3.5 rounded-full font-bold transition-all border border-white/10 hover:border-red-600 shadow-lg flex items-center gap-2">
@@ -87,13 +83,12 @@ export default createRoute(async (c) => {
         )}
       </div>
 
-      {/* Script Vanilla JS untuk fitur Load More Dinamis */}
       <script dangerouslySetInnerHTML={{__html: `
         document.addEventListener("DOMContentLoaded", function() {
           const loadMoreBtn = document.getElementById('load-more-btn');
           if (!loadMoreBtn) return;
           
-          const increment = 12; // Menampilkan 12 film setiap kali diklik
+          const increment = 12; 
           
           loadMoreBtn.addEventListener('click', function() {
             const hiddenCards = document.querySelectorAll('.movie-card.hidden');
@@ -101,7 +96,6 @@ export default createRoute(async (c) => {
               hiddenCards[i].classList.remove('hidden');
             }
             
-            // Sembunyikan tombol secara permanen jika sudah tidak ada kartu yang tersembunyi
             if (document.querySelectorAll('.movie-card.hidden').length === 0) {
               loadMoreBtn.style.display = 'none';
             }
