@@ -59,14 +59,18 @@ export async function verifyPassword(password: string, storedHash: string) {
     return attempt === storedHash;
 }
 
+// =====================================================================
+// FRONTEND FETCHERS: SUPER RINGAN & CEPAT KARENA WORKER SUDAH MEM-PARSING SEMUANYA
+// =====================================================================
+
 export async function fetchGenres(lang: string) {
     try {
         const res = await fetch(`${API_BASE}/genres/${lang}`);
         if (!res.ok) return [];
         const json = await res.json();
         const langData = json?.data?.[lang] || json?.data?.id || json?.data?.en || json?.data?.zh || json?.data;
-        if (!langData || !langData.data) return [];
-        return Array.isArray(langData.data) ? langData.data : [];
+        if (!langData || !langData.parsed_data) return [];
+        return Array.isArray(langData.parsed_data) ? langData.parsed_data : [];
     } catch(e) {
         return [];
     }
@@ -80,41 +84,15 @@ export async function fetchLibrary(lang: string, searchParams: string = '') {
         const json = await res.json();
         
         const langData = json?.data?.[lang] || json?.data?.id || json?.data?.en || json?.data?.zh || json?.data;
-        if (!langData || !langData.nextjs_ssr_data) return { movies: [], nextPageToken: null };
         
-        const rawData = langData.nextjs_ssr_data;
-        const extractedItems: any[] = [];
-        let nextPageToken: string | null = null;
-
-        rawData.forEach((chunk: string) => {
-            const cleanChunk = chunk.replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/\\\//g, '/');
-            
-            const blocks = cleanChunk.split('{"id":"');
-            for (let i = 1; i < blocks.length; i++) {
-                const block = '"id":"' + blocks[i];
-                const idMatch = block.match(/"id":"(\d+)"/);
-                const titleMatch = block.match(/"title":"(.*?)"/);
-                const descMatch = block.match(/"description":"(.*?)"/);
-                const slugMatch = block.match(/"slug":"(.*?)"/);
-                const thumbMatch = block.match(/"thumbnailUrl":"(.*?)"/);
-                
-                if (idMatch && titleMatch && slugMatch && thumbMatch) {
-                    extractedItems.push({
-                        id: idMatch[1], title: titleMatch[1], description: descMatch ? descMatch[1] : "",
-                        slug: slugMatch[1], thumbnailUrl: thumbMatch[1]
-                    });
-                }
-            }
-            
-            // THE ULTIMATE REGEX: Tangkap token base64 "eyJpZCI6..." di mana pun ia bersembunyi!
-            if (!nextPageToken) {
-                const tMatch = chunk.match(/(eyJpZCI6[a-zA-Z0-9+\/=\-_]+)/);
-                if (tMatch) nextPageToken = tMatch[1];
-            }
-        });
-
-        const uniqueMovies = Array.from(new Map(extractedItems.map(item => [item.id, item])).values());
-        return { movies: uniqueMovies, nextPageToken };
+        // Menerima JSON matang hasil racikan Worker Server
+        if (langData && langData.parsed_data) {
+             return { 
+                 movies: langData.parsed_data.movies || [], 
+                 nextPageToken: langData.parsed_data.nextPageToken || null 
+             };
+        }
+        return { movies: [], nextPageToken: null };
     } catch(e) {
         return { movies: [], nextPageToken: null };
     }
@@ -128,128 +106,47 @@ export async function fetchCatalog(lang: string, searchParams: string = '') {
         const json = await res.json();
         
         const langData = json?.data?.[lang] || json?.data?.id || json?.data?.en || json?.data?.zh || json?.data;
-        if (!langData || !langData.nextjs_ssr_data) return { movies: [], nextPageToken: null };
         
-        const rawData = langData.nextjs_ssr_data;
-        const extractedItems: any[] = [];
-        let nextPageToken: string | null = null;
-
-        rawData.forEach((chunk: string) => {
-            const cleanChunk = chunk.replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/\\\//g, '/');
-            
-            const blocks = cleanChunk.split('{"id":"');
-            for (let i = 1; i < blocks.length; i++) {
-                const block = '"id":"' + blocks[i];
-                const idMatch = block.match(/"id":"(\d+)"/);
-                const titleMatch = block.match(/"title":"(.*?)"/);
-                const descMatch = block.match(/"description":"(.*?)"/);
-                const slugMatch = block.match(/"slug":"(.*?)"/);
-                const thumbMatch = block.match(/"thumbnailUrl":"(.*?)"/);
-                
-                if (idMatch && titleMatch && slugMatch && thumbMatch) {
-                    extractedItems.push({
-                        id: idMatch[1], title: titleMatch[1], description: descMatch ? descMatch[1] : "",
-                        slug: slugMatch[1], thumbnailUrl: thumbMatch[1]
-                    });
-                }
-            }
-            
-            // THE ULTIMATE REGEX: Tangkap token base64 "eyJpZCI6..." di mana pun ia bersembunyi!
-            if (!nextPageToken) {
-                const tMatch = chunk.match(/(eyJpZCI6[a-zA-Z0-9+\/=\-_]+)/);
-                if (tMatch) nextPageToken = tMatch[1];
-            }
-        });
-
-        const uniqueMovies = Array.from(new Map(extractedItems.map(item => [item.id, item])).values());
-        return { movies: uniqueMovies, nextPageToken };
+        if (langData && langData.parsed_data) {
+             return { 
+                 movies: langData.parsed_data.movies || [], 
+                 nextPageToken: langData.parsed_data.nextPageToken || null 
+             };
+        }
+        return { movies: [], nextPageToken: null };
     } catch(e) {
         return { movies: [], nextPageToken: null };
     }
 }
 
 export async function fetchMovieDetail(lang: string, slug: string) {
-    const res = await fetch(`${API_BASE}/detail/${lang}/${slug}`);
-    if (!res.ok) return null;
-    const json = await res.json();
-    
-    const langData = json?.data?.[lang] || json?.data?.id || json?.data?.en || json?.data?.zh || json?.data;
-    if (!langData || !langData.nextjs_ssr_data) return null;
-
-    const rawData = langData.nextjs_ssr_data;
-    let movie: any = null;
-    let maxEpisode = 0;
-
-    rawData.forEach((chunk: string) => {
-        const cleanChunk = chunk.replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/\\\//g, '/');
+    try {
+        const res = await fetch(`${API_BASE}/detail/${lang}/${slug}`);
+        if (!res.ok) return null;
+        const json = await res.json();
         
-        if (!movie) {
-            const titleMatch = cleanChunk.match(/"title":"(.*?)".*?"slug":"(.*?)"/);
-            const descMatch = cleanChunk.match(/"description":"(.*?)"/);
-            const thumbMatch = cleanChunk.match(/"thumbnailUrl":"(.*?)"/);
-            
-            if (titleMatch && titleMatch[2] === slug) {
-                movie = {
-                    title: titleMatch[1], description: descMatch ? descMatch[1] : '',
-                    slug: titleMatch[2], thumbnailUrl: thumbMatch ? thumbMatch[1] : ''
-                };
-            }
+        const langData = json?.data?.[lang] || json?.data?.id || json?.data?.en || json?.data?.zh || json?.data;
+        if (langData && langData.parsed_data) {
+            return langData.parsed_data;
         }
-
-        const epRegex = /"episodeNumber":(\d+)/g;
-        let epMatch;
-        while ((epMatch = epRegex.exec(cleanChunk)) !== null) {
-            const epNum = parseInt(epMatch[1], 10);
-            if (epNum > maxEpisode) maxEpisode = epNum;
-        }
-    });
-
-    return { movie, maxEpisode };
+        return null;
+    } catch(e) {
+        return null;
+    }
 }
 
 export async function fetchEpisodeData(lang: string, slug: string, episodeStr: string) {
-    const res = await fetch(`${API_BASE}/episode/${lang}/${slug}/${episodeStr}`);
-    if (!res.ok) return null;
-    const json = await res.json();
-    
-    const langData = json?.data?.[lang] || json?.data?.id || json?.data?.en || json?.data?.zh || json?.data;
-    if (!langData || !langData.nextjs_ssr_data) return null;
-
-    const rawData = langData.nextjs_ssr_data;
-    let videoUrl = "";
-    let subtitleUrl = "";
-    const targetEp = parseInt(episodeStr, 10);
-
-    rawData.forEach((chunk: string) => {
-        const cleanChunk = chunk.replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/\\\//g, '/');
-        const epBlocks = cleanChunk.split('"episodeNumber":');
+    try {
+        const res = await fetch(`${API_BASE}/episode/${lang}/${slug}/${episodeStr}`);
+        if (!res.ok) return null;
+        const json = await res.json();
         
-        for (let i = 1; i < epBlocks.length; i++) {
-            const block = epBlocks[i];
-            
-            if (block.startsWith(`${targetEp},`) || block.startsWith(`${targetEp}}`)) {
-                const vMatch = block.match(/"videoUrl"\s*:\s*"([^"]+\.m3u8[^"]*)"/);
-                if (vMatch) videoUrl = vMatch[1];
-
-                const sMatch = block.match(/"fileUrl"\s*:\s*"([^"]+\.vtt[^"]*)"/);
-                if (sMatch) subtitleUrl = sMatch[1];
-                
-                if (videoUrl) break;
-            }
+        const langData = json?.data?.[lang] || json?.data?.id || json?.data?.en || json?.data?.zh || json?.data;
+        if (langData && langData.parsed_data) {
+             return langData.parsed_data;
         }
-
-        if (!videoUrl) {
-            const indexToken = cleanChunk.indexOf(`"episodeNumber":${targetEp}`);
-            if (indexToken !== -1) {
-                const isolatedWindow = cleanChunk.substring(indexToken, indexToken + 3000);
-                const vMatch = isolatedWindow.match(/"videoUrl"\s*:\s*"([^"]+\.m3u8[^"]*)"/);
-                if (vMatch) videoUrl = vMatch[1];
-
-                const sMatch = isolatedWindow.match(/"fileUrl"\s*:\s*"([^"]+\.vtt[^"]*)"/);
-                if (sMatch) subtitleUrl = sMatch[1];
-            }
-        }
-    });
-
-    return { videoUrl, subtitleUrl };
+        return null;
+    } catch(e) {
+        return null;
+    }
 }
