@@ -1,8 +1,8 @@
 import { createRoute } from 'honox/factory'
-import { fetchCatalog, t } from '../utils'
+import { fetchCatalog, t, getAppLang } from '../utils'
 
 export default createRoute(async (c) => {
-  const currentLang = c.var.lang || 'id'; 
+  const currentLang = getAppLang(c); 
   const movies = await fetchCatalog(currentLang);
   
   const heroMovie = movies.length > 0 ? movies[Math.floor(Math.random() * movies.length)] : null;
@@ -32,10 +32,9 @@ export default createRoute(async (c) => {
         <h2 class="text-xl font-bold text-white mb-6">{t(currentLang, 'trending')}</h2>
         
         {movies.length > 0 ? (
-          {/* PERBAIKAN: Mengubah Flex Horizontal menjadi Grid agar seluruh film tampil memanjang ke bawah */}
           <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 pb-6">
             {movies.map((movie) => (
-              <a href={`/detail/${movie.slug}`} class="group relative block w-full aspect-[2/3] rounded-md overflow-hidden bg-[#141414] transition-transform duration-300 hover:scale-105 shadow-md">
+              <a href={`/detail/${movie.slug}`} class="group relative block w-full aspect-[2/3] rounded-md overflow-hidden bg-[#141414] transition-transform duration-300 hover:scale-105 shadow-md border border-white/5">
                 <img src={movie.thumbnailUrl} alt={movie.title} class="object-cover w-full h-full" loading="lazy" />
                 <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">
                   <h3 class="text-xs md:text-sm font-semibold text-white line-clamp-2 leading-snug">{movie.title}</h3>
