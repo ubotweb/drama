@@ -13,6 +13,5 @@ export const POST = createRoute(async (c) => {
     .bind(user.id, slug, parseInt(episode, 10))
     .run();
 
-  // Redirect mengikuti bahasa asal pemutaran
   return c.redirect(`/episode/${lang}/${slug}/${episode}`);
 })
