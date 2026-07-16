@@ -1,5 +1,6 @@
 import { createRoute } from 'honox/factory'
-import { fetchEpisodeData, fetchMovieDetail, t } from '../../../utils'
+// PERBAIKAN FATAL: Path import diubah menjadi 4 tingkat kedalaman
+import { fetchEpisodeData, fetchMovieDetail, t } from '../../../../utils'
 
 export default createRoute(async (c) => {
   const lang = c.req.param('lang'); 
