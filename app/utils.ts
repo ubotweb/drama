@@ -59,10 +59,6 @@ export async function verifyPassword(password: string, storedHash: string) {
     return attempt === storedHash;
 }
 
-// =====================================================================
-// API FETCHERS DENGAN PARSER TAHAN BANTING (ANTI-BUG) & PENANGKAP PAGE TOKEN
-// =====================================================================
-
 export async function fetchGenres(lang: string) {
     try {
         const res = await fetch(`${API_BASE}/genres/${lang}`);
@@ -93,8 +89,6 @@ export async function fetchLibrary(lang: string, searchParams: string = '') {
         rawData.forEach((chunk: string) => {
             const cleanChunk = chunk.replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/\\\//g, '/');
             
-            // TEKNIK PARSING PROFESIONAL: Membedah string menjadi objek-objek kecil 
-            // sehingga urutan key (slug, title, dsb) tidak akan pernah menjadi masalah lagi!
             const blocks = cleanChunk.split('{"id":"');
             for (let i = 1; i < blocks.length; i++) {
                 const block = '"id":"' + blocks[i];
@@ -112,9 +106,9 @@ export async function fetchLibrary(lang: string, searchParams: string = '') {
                 }
             }
             
-            // PENANGKAP PAGINASI MUTLAK: Memburu string Base64 yang diawali dengan "eyJpZCI6"
+            // THE ULTIMATE REGEX: Tangkap token base64 "eyJpZCI6..." di mana pun ia bersembunyi!
             if (!nextPageToken) {
-                const tMatch = cleanChunk.match(/"[^"]+"\s*:\s*"(eyJpZCI6[^"]+)"/);
+                const tMatch = chunk.match(/(eyJpZCI6[a-zA-Z0-9+\/=\-_]+)/);
                 if (tMatch) nextPageToken = tMatch[1];
             }
         });
@@ -160,8 +154,9 @@ export async function fetchCatalog(lang: string, searchParams: string = '') {
                 }
             }
             
+            // THE ULTIMATE REGEX: Tangkap token base64 "eyJpZCI6..." di mana pun ia bersembunyi!
             if (!nextPageToken) {
-                const tMatch = cleanChunk.match(/"[^"]+"\s*:\s*"(eyJpZCI6[^"]+)"/);
+                const tMatch = chunk.match(/(eyJpZCI6[a-zA-Z0-9+\/=\-_]+)/);
                 if (tMatch) nextPageToken = tMatch[1];
             }
         });
