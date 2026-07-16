@@ -8,7 +8,8 @@ declare module 'hono' {
       JWT_SECRET: string
     }
     Variables: {
-      user: { id: number; email: string; is_premium: boolean; exp?: number } | null
+      user: { id: number; username: string; is_premium: boolean; exp?: number } | null
+      lang: string 
     }
   }
 }
