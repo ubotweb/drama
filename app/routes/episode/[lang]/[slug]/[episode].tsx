@@ -1,27 +1,27 @@
 import { createRoute } from 'honox/factory'
-import { fetchEpisodeData, fetchMovieDetail } from '../../../utils'
+import { fetchEpisodeData, fetchMovieDetail, t } from '../../../utils'
 
 export default createRoute(async (c) => {
-  const lang = c.req.param('lang'); // Mengambil bahasa langsung dari Struktur URL Anda!
+  const lang = c.req.param('lang'); 
   const slug = c.req.param('slug');
   const episodeStr = c.req.param('episode');
   const episode = parseInt(episodeStr, 10);
   const user = c.get('user');
 
   // ==========================================================
-  // LOGIKA BISNIS LIMITASI EPISODE
+  // LOGIKA BISNIS LIMITASI EPISODE (Dengan Teks i18n Dinamis)
   // ==========================================================
   if (!user && episode > 10) {
     return c.render(
       <div class="min-h-screen flex items-center justify-center px-4 pt-16">
         <div class="max-w-md w-full text-center p-8 bg-[#141414] rounded-2xl border border-white/10 shadow-2xl">
           <div class="w-16 h-16 bg-red-600/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">🔒</div>
-          <h2 class="text-2xl font-bold text-white mb-3">Batas Episode Tercapai</h2>
-          <p class="text-gray-400 mb-8 text-sm leading-relaxed">Pengguna tanpa akun hanya dapat menonton hingga episode 10. Silakan login untuk menonton lebih banyak secara gratis.</p>
-          <a href="/login" class="block w-full bg-red-600 hover:bg-red-700 text-white py-3.5 rounded-lg font-bold transition">Login Sekarang</a>
+          <h2 class="text-2xl font-bold text-white mb-3">{t(lang, 'limit')}</h2>
+          <p class="text-gray-400 mb-8 text-sm leading-relaxed">{t(lang, 'limit_desc')}</p>
+          <a href="/login" class="block w-full bg-red-600 hover:bg-red-700 text-white py-3.5 rounded-lg font-bold transition">{t(lang, 'login')}</a>
         </div>
       </div>,
-      { title: 'Batas Tercapai - AllDrama' }
+      { title: `AllDrama - ${t(lang, 'limit')}` }
     );
   }
 
@@ -34,22 +34,22 @@ export default createRoute(async (c) => {
         <div class="min-h-screen flex items-center justify-center px-4 pt-16">
           <div class="max-w-md w-full text-center p-8 bg-[#141414] rounded-2xl border border-white/10 shadow-2xl">
              <div class="w-16 h-16 bg-yellow-500/20 text-yellow-500 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">💎</div>
-            <h2 class="text-2xl font-bold text-white mb-3">Episode Premium</h2>
-            <p class="text-gray-400 mb-8 text-sm leading-relaxed">Anda telah mencapai batas 15 episode gratis. Tonton satu iklan singkat untuk membuka episode ini, atau jadilah VIP.</p>
+            <h2 class="text-2xl font-bold text-white mb-3">{t(lang, 'locked')}</h2>
+            <p class="text-gray-400 mb-8 text-sm leading-relaxed">{t(lang, 'locked_desc')}</p>
             <div class="flex flex-col gap-3">
                <form method="POST" action={`/api/unlock-ad`}>
                  <input type="hidden" name="lang" value={lang} />
                  <input type="hidden" name="slug" value={slug} />
                  <input type="hidden" name="episode" value={episode} />
                  <button type="submit" class="w-full bg-white text-black hover:bg-gray-200 py-3.5 rounded-lg font-bold transition flex justify-center items-center gap-2">
-                   ▶ Tonton Iklan (Buka 1 Ep)
+                   ▶ {t(lang, 'watch_ad')}
                  </button>
                </form>
-               <button class="w-full border border-yellow-600 text-yellow-500 hover:bg-yellow-600/10 py-3.5 rounded-lg font-bold transition">Berlangganan VIP</button>
+               <button class="w-full border border-yellow-600 text-yellow-500 hover:bg-yellow-600/10 py-3.5 rounded-lg font-bold transition">{t(lang, 'vip')}</button>
             </div>
           </div>
         </div>,
-        { title: 'Premium - AllDrama' }
+        { title: `AllDrama - ${t(lang, 'locked')}` }
       );
     }
   }
@@ -63,7 +63,7 @@ export default createRoute(async (c) => {
   const episodes = Array.from({ length: totalEpisodes }, (_, i) => i + 1);
   
   if (!media || !media.videoUrl) {
-    return c.render(<div class="text-center mt-32 text-white">Video belum tersedia untuk negara ini.</div>);
+    return c.render(<div class="text-center mt-32 text-white">{t(lang, 'no_video')}</div>);
   }
 
   return c.render(
@@ -78,17 +78,17 @@ export default createRoute(async (c) => {
       
       <div class="max-w-5xl mx-auto px-4 py-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
          <div>
-             <h1 class="text-2xl font-bold text-white mb-1">Episode {episode}</h1>
+             <h1 class="text-2xl font-bold text-white mb-1">{t(lang, 'episode')} {episode}</h1>
              <p class="text-gray-400 text-sm">{detailData?.movie?.title || slug}</p>
          </div>
          <div class="flex gap-2 w-full sm:w-auto">
-            {episode > 1 && <a href={`/episode/${lang}/${slug}/${episode - 1}`} class="flex-1 sm:flex-none text-center bg-[#262626] hover:bg-[#333] text-white px-6 py-3 rounded-md text-sm font-semibold transition">Sebelumnya</a>}
-            <a href={`/episode/${lang}/${slug}/${episode + 1}`} class="flex-1 sm:flex-none text-center bg-white text-black hover:bg-gray-200 px-6 py-3 rounded-md text-sm font-bold transition">Selanjutnya</a>
+            {episode > 1 && <a href={`/episode/${lang}/${slug}/${episode - 1}`} class="flex-1 sm:flex-none text-center bg-[#262626] hover:bg-[#333] text-white px-6 py-3 rounded-md text-sm font-semibold transition">{t(lang, 'prev')}</a>}
+            <a href={`/episode/${lang}/${slug}/${episode + 1}`} class="flex-1 sm:flex-none text-center bg-white text-black hover:bg-gray-200 px-6 py-3 rounded-md text-sm font-bold transition">{t(lang, 'next')}</a>
          </div>
       </div>
 
       <div class="max-w-5xl mx-auto px-4 pb-12">
-        <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Daftar Episode</h3>
+        <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">{t(lang, 'ep_list')}</h3>
         <div class="flex overflow-x-auto gap-2 pb-4 hide-scrollbar snap-x">
             {episodes.map(ep => (
                 <a href={`/episode/${lang}/${slug}/${ep}`} class={`snap-start shrink-0 px-5 py-3 rounded-md font-medium text-sm transition-all ${ep === episode ? 'bg-red-600 text-white shadow-lg shadow-red-900/30' : 'bg-[#141414] border border-white/5 text-gray-400 hover:bg-[#262626]'}`}>
@@ -112,6 +112,6 @@ export default createRoute(async (c) => {
         }
       `}}></script>
     </div>,
-    { title: `Episode ${episode} - AllDrama` }
+    { title: `${t(lang, 'episode')} ${episode} - AllDrama` }
   )
 })
