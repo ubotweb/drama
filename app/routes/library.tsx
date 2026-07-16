@@ -46,12 +46,12 @@ export default createRoute(async (c) => {
 
   const buildGenreUrl = (genreSlug: string) => {
       const params = new URLSearchParams(searchParams);
+      params.delete('pageToken'); // Jika memfilter ulang, mulai dari awal
       if (genreSlug === '') {
           params.delete('genre'); 
       } else {
           const existingGenres = params.getAll('genre');
           params.delete('genre'); 
-          
           if (existingGenres.includes(genreSlug)) {
               existingGenres.filter(g => g !== genreSlug).forEach(g => params.append('genre', g));
           } else {
@@ -64,6 +64,7 @@ export default createRoute(async (c) => {
 
   const buildUrl = (key: string, value: string) => {
       const params = new URLSearchParams(searchParams);
+      params.delete('pageToken'); 
       if (value) params.set(key, value);
       else params.delete(key);
       return `/library?${params.toString()}`;
@@ -167,7 +168,7 @@ export default createRoute(async (c) => {
 
                 try {
                     const urlParams = new URLSearchParams(window.location.search);
-                    urlParams.set('pageToken', token); // Meneruskan PageToken
+                    urlParams.set('pageToken', token); 
                     
                     const lang = document.documentElement.lang || 'id';
                     const apiBase = "https://dramapi.ubot.web.id/api";
@@ -199,7 +200,7 @@ export default createRoute(async (c) => {
                         }
                         
                         if (!nextToken) {
-                            const tMatch = cleanChunk.match(/"[^"]+"\\s*:\\s*"(eyJpZCI6[^"]+)"/);
+                            const tMatch = chunk.match(/(eyJpZCI6[a-zA-Z0-9+\\/=\\-_]+)/);
                             if (tMatch) nextToken = tMatch[1];
                         }
                     });
