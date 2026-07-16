@@ -23,9 +23,12 @@ const UI_TRANSLATIONS: Record<string, Record<string, string>> = {
     'fil': { home: "Home", account: "Account", trending: "Trending", watch_now: "Manood Ngayon", suitable: "Para sa iyo", episode: "Episode", watch_ep1: "Manood ng Ep 1", select_ep: "Pumili ng Episode", prev: "Nakaraan", next: "Susunod", ep_list: "Listahan ng Episode", locked: "Naka-lock na Premium", limit: "Naabot ang Limitasyon", watch_ad: "Manood ng Ads (I-unlock ang 1 Ep)", vip: "Mag-subscribe sa VIP", login: "Mag-login", not_found: "Walang data", no_video: "Hindi available ang video sa bansang ito.", limit_desc: "Hanggang ep 10 lang ang maaaring mapanood ng guest. Mag-login para manood pa nang libre.", locked_desc: "Naabot mo na ang 15 libreng episode. Manood ng ad para i-unlock ang episode na ito, o maging VIP." }
 };
 
+// =====================================================================
+// FALLBACK BAHASA UI: Requested Lang -> ID -> EN -> ZH
+// =====================================================================
 export function t(lang: string, key: string): string {
-    const dictionary = UI_TRANSLATIONS[lang] || UI_TRANSLATIONS['en'];
-    return dictionary[key] || UI_TRANSLATIONS['en'][key] || key;
+    const dictionary = UI_TRANSLATIONS[lang] || UI_TRANSLATIONS['id'] || UI_TRANSLATIONS['en'] || UI_TRANSLATIONS['zh'];
+    return dictionary[key] || UI_TRANSLATIONS['id']?.[key] || UI_TRANSLATIONS['en']?.[key] || UI_TRANSLATIONS['zh']?.[key] || key;
 }
 
 // =====================================================================
@@ -58,23 +61,23 @@ export async function verifyPassword(password: string, storedHash: string) {
 }
 
 // =====================================================================
-// API FETCHERS DENGAN PENGAMANAN PERETASAN NEXT.JS ESCAPING STRING
+// API FETCHERS DENGAN HIERARKI FALLBACK DATA MUTLAK (Lang -> ID -> EN -> ZH)
 // =====================================================================
+
 export async function fetchCatalog(lang: string) {
     const res = await fetch(`${API_BASE}/catalog/${lang}`);
     if (!res.ok) return [];
     const json = await res.json();
     
-    const langData = json?.data?.[lang] || json?.data?.id || json?.data;
+    // LOGIKA FALLBACK BERANTAI: Requested Lang -> ID -> EN -> ZH
+    const langData = json?.data?.[lang] || json?.data?.id || json?.data?.en || json?.data?.zh || json?.data;
     if (!langData || !langData.nextjs_ssr_data) return [];
     
     const rawData = langData.nextjs_ssr_data;
     const extractedItems: any[] = [];
 
     rawData.forEach((chunk: string) => {
-        // PERBAIKAN FATAL: Menghapus semua escaping backslash (\) bawaan NextJS agar Regex bisa membedahnya
         const cleanChunk = chunk.replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/\\\//g, '/');
-        
         const regex = /"id":"(\d+)","title":"(.*?)","description":"(.*?)","slug":"(.*?)","thumbnailUrl":"(.*?)"/g;
         let match;
         while ((match = regex.exec(cleanChunk)) !== null) {
@@ -96,7 +99,8 @@ export async function fetchMovieDetail(lang: string, slug: string) {
     if (!res.ok) return null;
     const json = await res.json();
     
-    const langData = json?.data?.[lang] || json?.data?.id || json?.data;
+    // LOGIKA FALLBACK BERANTAI: Requested Lang -> ID -> EN -> ZH
+    const langData = json?.data?.[lang] || json?.data?.id || json?.data?.en || json?.data?.zh || json?.data;
     if (!langData || !langData.nextjs_ssr_data) return null;
 
     const rawData = langData.nextjs_ssr_data;
@@ -104,7 +108,6 @@ export async function fetchMovieDetail(lang: string, slug: string) {
     let maxEpisode = 0;
 
     rawData.forEach((chunk: string) => {
-        // PERBAIKAN FATAL
         const cleanChunk = chunk.replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/\\\//g, '/');
         
         if (!movie) {
@@ -133,12 +136,13 @@ export async function fetchMovieDetail(lang: string, slug: string) {
     return { movie, maxEpisode };
 }
 
-export async function fetchEpisodeData(lang: string, slug: string, episode: string) {
-    const res = await fetch(`${API_BASE}/episode/${lang}/${slug}/${episode}`);
+export async function fetchEpisodeData(lang: string, slug: string, episodeStr: string) {
+    const res = await fetch(`${API_BASE}/episode/${lang}/${slug}/${episodeStr}`);
     if (!res.ok) return null;
     const json = await res.json();
     
-    const langData = json?.data?.[lang] || json?.data?.id || json?.data;
+    // LOGIKA FALLBACK BERANTAI: Requested Lang -> ID -> EN -> ZH
+    const langData = json?.data?.[lang] || json?.data?.id || json?.data?.en || json?.data?.zh || json?.data;
     if (!langData || !langData.nextjs_ssr_data) return null;
 
     const rawData = langData.nextjs_ssr_data;
@@ -146,14 +150,32 @@ export async function fetchEpisodeData(lang: string, slug: string, episode: stri
     let subtitleUrl = "";
 
     rawData.forEach((chunk: string) => {
-        // PERBAIKAN FATAL
         const cleanChunk = chunk.replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/\\\//g, '/');
         
-        const videoMatch = cleanChunk.match(/https:\/\/[^"'\s]*?\.m3u8/);
-        if (videoMatch) videoUrl = videoMatch[0];
+        // Memecah string menjadi array objek per-episode agar selalu spesifik memuat nomor episode
+        const blocks = cleanChunk.split('{"id":');
+        
+        for (const block of blocks) {
+            if (block.includes(`"episodeNumber":${episodeStr},`) || block.includes(`"episodeNumber":${episodeStr}}`)) {
+                const vMatch = block.match(/"videoUrl":"([^"]+\.m3u8[^"]*)"/);
+                if (vMatch) videoUrl = vMatch[1];
 
-        const subMatch = cleanChunk.match(/https:\/\/[^"'\s]*?\.vtt/);
-        if (subMatch) subtitleUrl = subMatch[0];
+                const sMatch = block.match(/"subtitleUrl":"([^"]+\.vtt[^"]*)"/);
+                if (sMatch) subtitleUrl = sMatch[1];
+            }
+        }
+
+        if (!videoUrl) {
+            const epIndex = cleanChunk.indexOf(`"episodeNumber":${episodeStr}`);
+            if (epIndex !== -1) {
+                const windowStr = cleanChunk.substring(Math.max(0, epIndex - 800), epIndex + 1500);
+                const vMatch = windowStr.match(/"videoUrl":"([^"]+\.m3u8[^"]*)"/);
+                if (vMatch) videoUrl = vMatch[1];
+
+                const sMatch = windowStr.match(/"subtitleUrl":"([^"]+\.vtt[^"]*)"/);
+                if (sMatch) subtitleUrl = sMatch[1];
+            }
+        }
     });
 
     return { videoUrl, subtitleUrl };
