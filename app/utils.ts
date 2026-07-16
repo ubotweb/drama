@@ -135,6 +135,7 @@ export async function fetchEpisodeData(lang: string, slug: string, episodeStr: s
     if (!res.ok) return null;
     const json = await res.json();
     
+    // HIERARKI FALLBACK DATA MUTLAK
     const langData = json?.data?.[lang] || json?.data?.id || json?.data?.en || json?.data?.zh || json?.data;
     if (!langData || !langData.nextjs_ssr_data) return null;
 
@@ -143,47 +144,37 @@ export async function fetchEpisodeData(lang: string, slug: string, episodeStr: s
     let subtitleUrl = "";
     const targetEp = parseInt(episodeStr, 10);
 
+    // KUNCI PERBAIKAN: Melakukan iterasi pada setiap chunk dan membedah objek JSON secara ketat
     rawData.forEach((chunk: string) => {
+        // Bersihkan escaping NextJS agar JSON valid
         const cleanChunk = chunk.replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/\\\//g, '/');
         
-        // REVOLUSI PARSER MUTLAK: Menggunakan RegExp pencarian global objek video terisolasi 
-        // untuk mengamankan kecocokan nomor episode yang valid dan akurat!
-        const videoBlockRegex = /"video"\s*:\s*\{([^}]+)\}/g;
-        let blockMatch;
+        // Split berdasarkan pola objek video untuk isolasi per episode
+        // API Shortflix biasanya membungkus data episode dalam blok {"video":{...}}
+        const blocks = cleanChunk.split('"video":{');
         
-        while ((blockMatch = videoBlockRegex.exec(cleanChunk)) !== null) {
-            const blockContent = blockMatch[1];
+        for (const block of blocks) {
+            // Cek apakah blok ini mengandung episodeNumber yang kita cari
+            // Kita menggunakan regex untuk mencari "episodeNumber": 2 (spasi opsional)
+            const epMatch = block.match(/"episodeNumber"\s*:\s*(\d+)/);
             
-            // Periksa secara ketat apakah blok objek video saat ini memuat episodeNumber target
-            const epNumMatch = blockContent.match(/"episodeNumber"\s*:\s*(\d+)/);
-            if (epNumMatch && parseInt(epNumMatch[1], 10) === targetEp) {
-                
-                // Ekstrak properti URL media langsung dari skop blok terisolasi ini
-                const vUrlMatch = blockContent.match(/"videoUrl"\s*:\s*"([^"]+\.m3u8[^"]*)"/);
-                if (vUrlMatch) videoUrl = vUrlMatch[1];
+            if (epMatch && parseInt(epMatch[1], 10) === targetEp) {
+                // Ekstrak URL Video
+                const vMatch = block.match(/"videoUrl"\s*:\s*"([^"]+)"/);
+                if (vMatch) videoUrl = vMatch[1];
 
-                const sUrlMatch = blockContent.match(/"subtitleUrl"\s*:\s*"([^"]+\.vtt[^"]*)"/);
-                if (sUrlMatch) subtitleUrl = sUrlMatch[1];
+                // Ekstrak URL Subtitle
+                const sMatch = block.match(/"subtitleUrl"\s*:\s*"([^"]+)"/);
+                if (sMatch) subtitleUrl = sMatch[1];
                 
-                // Jika sudah mendapatkan kecocokan mutlak, langsung kunci data dan hentikan loop!
+                // Jika sudah ditemukan di blok ini, hentikan pencarian
                 if (videoUrl) break;
             }
         }
-
-        // METODE DETEKSI KEDUA (PENGAMAN JIKA STRUKTUR CHUNK NEXT.JS BERUBAH)
-        if (!videoUrl) {
-            const epIndexToken = cleanChunk.indexOf(`"episodeNumber":${targetEp}`);
-            if (epIndexToken !== -1) {
-                // Isolasi area sekitar token nomor episode sejauh 2500 karakter
-                const isolatedWindow = cleanChunk.substring(Math.max(0, epIndexToken - 1200), epIndexToken + 1200);
-                const vUrlMatch = isolatedWindow.match(/"videoUrl"\s*:\s*"([^"]+\.m3u8[^"]*)"/);
-                if (vUrlMatch) videoUrl = vUrlMatch[1];
-
-                const sUrlMatch = isolatedWindow.match(/"subtitleUrl"\s*:\s*"([^"]+\.vtt[^"]*)"/);
-                if (sUrlMatch) subtitleUrl = sUrlMatch[1];
-            }
-        }
     });
+
+    // Logging untuk debugging di terminal Cloudflare
+    console.log(`Debug: Lang=${lang}, Ep=${targetEp}, FoundVideo=${videoUrl}, FoundSub=${subtitleUrl}`);
 
     return { videoUrl, subtitleUrl };
 }
