@@ -26,7 +26,6 @@ export default jsxRenderer(({ children, title, lang }) => {
             <a href="/" class="text-2xl font-black text-red-600 tracking-tighter">ALLDRAMA</a>
             <div class="flex items-center gap-4 text-sm font-medium">
               
-              {/* DROPDOWN 17 BAHASA LENGKAP SESUAI API SHORTFLIX */}
               <form action="" method="GET" class="relative">
                 <select name="lang" onchange="this.form.submit()" class="bg-[#262626] text-white border border-white/20 rounded-md px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-red-600 appearance-none text-xs sm:text-sm cursor-pointer">
                   <option value="id" selected={currentLang === 'id'}>🇮🇩 ID</option>
