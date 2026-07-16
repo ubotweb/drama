@@ -5,6 +5,7 @@ export const POST = createRoute(async (c) => {
   if (!user) return c.redirect('/login');
 
   const body = await c.req.parseBody();
+  const lang = body.lang as string;
   const slug = body.slug as string;
   const episode = body.episode as string;
 
@@ -12,5 +13,6 @@ export const POST = createRoute(async (c) => {
     .bind(user.id, slug, parseInt(episode, 10))
     .run();
 
-  return c.redirect(`/episode/${slug}/${episode}`);
+  // Redirect mengikuti bahasa asal pemutaran
+  return c.redirect(`/episode/${lang}/${slug}/${episode}`);
 })
