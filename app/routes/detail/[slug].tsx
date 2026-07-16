@@ -2,13 +2,12 @@ import { createRoute } from 'honox/factory'
 import { fetchMovieDetail, t } from '../../utils'
 
 export default createRoute(async (c) => {
-  // 1. Mengambil bahasa secara AMAN dari state Global (Cookie), bukan dari URL!
-  const lang = c.get('lang') || 'id';
+  const lang = c.var.lang || 'id';
   const slug = c.req.param('slug');
   const detailData = await fetchMovieDetail(lang, slug);
 
   if (!detailData || !detailData.movie) {
-    return c.render(<div class="text-center mt-32 text-white">{t(lang, 'not_found')}</div>);
+    return c.render(<div class="text-center mt-32 text-white">{t(lang, 'not_found')}</div>, { lang: lang });
   }
 
   const { movie, maxEpisode } = detailData;
@@ -30,7 +29,6 @@ export default createRoute(async (c) => {
               <span>• {totalEpisodes} {t(lang, 'episode')}</span>
             </div>
             <p class="text-gray-300 text-sm md:text-base leading-relaxed mb-8">{movie.description}</p>
-            {/* LINK EPISODE: Memasukkan variabel 'lang' yang sudah pasti ada nilainya (id/en/dst) */}
             <a href={`/episode/${lang}/${movie.slug}/1`} class="inline-flex w-full md:w-auto items-center justify-center bg-red-600 text-white font-bold px-10 py-4 rounded-md hover:bg-red-700 transition gap-2 shadow-lg shadow-red-900/40">
                ▶ {t(lang, 'watch_ep1')}
             </a>
@@ -42,7 +40,6 @@ export default createRoute(async (c) => {
         <h3 class="text-xl font-bold text-white mb-6">{t(lang, 'select_ep')}</h3>
         <div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-10 gap-3">
           {episodes.map(ep => (
-            {/* LINK EPISODE LIST: Memasukkan variabel 'lang' secara eksplisit */}
             <a href={`/episode/${lang}/${movie.slug}/${ep}`} class="bg-[#141414] border border-white/5 hover:border-white/20 hover:bg-[#262626] text-gray-300 text-center py-4 rounded-md font-medium text-sm transition-all shadow-sm">
               {ep}
             </a>
@@ -50,6 +47,6 @@ export default createRoute(async (c) => {
         </div>
       </div>
     </div>,
-    { title: `${movie.title} - AllDrama` }
+    { title: `${movie.title} - AllDrama`, lang: lang }
   )
 })
