@@ -12,7 +12,7 @@ const UI_TRANSLATIONS: Record<string, Record<string, string>> = {
     'de': { home: "Startseite", account: "Konto", trending: "Trends", watch_now: "Jetzt ansehen", suitable: "Für dich", episode: "Episode", watch_ep1: "Episode 1 ansehen", select_ep: "Episode wählen", prev: "Zurück", next: "Weiter", ep_list: "Episodenliste", locked: "Premium-Episode gesperrt", limit: "Limit erreicht", watch_ad: "Werbung ansehen (1 Ep freischalten)", vip: "VIP abonnieren", login: "Jetzt einloggen", not_found: "Daten nicht gefunden", no_video: "Video in diesem Land nicht verfügbar.", limit_desc: "Gäste können nur bis Episode 10 ansehen. Bitte loggen Sie sich ein, um mehr kostenlos zu sehen.", locked_desc: "Sie haben das Limit von 15 kostenlosen Episoden erreicht. Sehen Sie sich eine kurze Werbung an, um diese Episode freizuschalten, oder werden Sie VIP." },
     'pt': { home: "Início", account: "Conta", trending: "Em Alta", watch_now: "Assistir Agora", suitable: "Para você", episode: "Episódio", watch_ep1: "Assistir Ep 1", select_ep: "Escolher Episódio", prev: "Anterior", next: "Próximo", ep_list: "Lista de Episódios", locked: "Episódio Premium Bloqueado", limit: "Limite Atingido", watch_ad: "Ver Anúncio (Desbloquear 1 Ep)", vip: "Assinar VIP", login: "Entrar", not_found: "Dados não encontrados", no_video: "Vídeo não disponível neste país.", limit_desc: "Convidados só podem assistir até o ep 10. Faça login para assistir mais de graça.", locked_desc: "Você atingiu o limite de 15 episódios gratuitos. Assista a um anúncio para desbloquear este episódio ou torne-se VIP." },
     'ms': { home: "Utama", account: "Akaun", trending: "Trending", watch_now: "Tonton Sekarang", suitable: "Sesuai untuk anda", episode: "Episod", watch_ep1: "Tonton Episod 1", select_ep: "Pilih Episod", prev: "Sebelum", next: "Seterusnya", ep_list: "Senarai Episod", locked: "Episod Premium Dikunci", limit: "Had Dicapai", watch_ad: "Tonton Iklan (Buka 1 Ep)", vip: "Langgan VIP", login: "Log Masuk", not_found: "Tiada data ditemui", no_video: "Video tidak tersedia untuk negara ini.", limit_desc: "Tetamu hanya boleh menonton sehingga episod 10. Sila log masuk untuk menonton lebih banyak secara percuma.", locked_desc: "Anda telah mencapai had 15 episod percuma. Tonton iklan pendek untuk membuka episod ini, atau jadi VIP." },
-    'it': { home: "Home", account: "Account", trending: "Tendenze", watch_now: "Guarda Ora", suitable: "Per te", episode: "Episodio", watch_ep1: "Guarda Ep 1", select_ep: "Scegli Episodio", prev: "Precedente", next: "Successivo", ep_list: "Lista Episodi", locked: "Episodio Premium Bloccato", limit: "Limite Raggiunto", watch_ad: "Guarda Annuncio (Sblocca 1 Ep)", vip: "Abbonati VIP", login: "Accedi", not_found: "Dati non trovati", no_video: "Video non disponibile in questo paese.", limit_desc: "Gli ospiti possono guardare fino all'episodio 10. Accedi per guardare di più gratuitamente.", locked_desc: "Hai raggiunto il limite di 15 episodi gratuitos. Guarda un annuncio per sbloccare questo episodio o o diventa VIP." },
+    'it': { home: "Home", account: "Account", trending: "Tendenze", watch_now: "Guarda Ora", suitable: "Per te", episode: "Episodio", watch_ep1: "Guarda Ep 1", select_ep: "Scegli Episodio", prev: "Precedente", next: "Successivo", ep_list: "Lista Episodi", locked: "Episodio Premium Bloccato", limit: "Limite Raggiunto", watch_ad: "Guarda Annuncio (Sblocca 1 Ep)", vip: "Abbonati VIP", login: "Accedi", not_found: "Dati non trovati", no_video: "Video non disponibile in questo paese.", limit_desc: "Gli ospiti possono guardare fino all'episodio 10. Accedi per guardare di più gratuitamente.", locked_desc: "Hai raggiunto il limite di 15 episodi gratuiti. Guarda un annuncio per sbloccare questo episodio o diventa VIP." },
     'zh': { home: "首頁", account: "帳戶", trending: "熱門趨勢", watch_now: "立即觀看", suitable: "為您推薦", episode: "集", watch_ep1: "觀看第1集", select_ep: "選擇集數", prev: "上一集", next: "下一集", ep_list: "集數列表", locked: "高級集數已鎖定", limit: "達到集數限制", watch_ad: "觀看廣告 (解鎖1集)", vip: "訂閱 VIP", login: "立即登入", not_found: "找不到數據", no_video: "該國家/地區暫無視頻。", limit_desc: "未登入用戶最多只能觀看至第10集。請登入以免費觀看更多。", locked_desc: "您已達到15集免費觀看上限。觀看簡短廣告解鎖此集，或成為 VIP。" },
     'zh-cn': { home: "首页", account: "账户", trending: "热门趋势", watch_now: "立即观看", suitable: "为您推荐", episode: "集", watch_ep1: "观看第1集", select_ep: "选择集数", prev: "上一集", next: "下一集", ep_list: "集数列表", locked: "高级集数已锁定", limit: "达到集数限制", watch_ad: "观看广告 (解锁1集)", vip: "订阅 VIP", login: "立即登录", not_found: "找不到数据", no_video: "该国家/地区暂无视频。", limit_desc: "未登录用户最多只能观看至第10集。请登录以免费观看更多。", locked_desc: "您已达到15集免费观看上限。观看简短广告解锁此集，或成为 VIP。" },
     'fr': { home: "Accueil", account: "Compte", trending: "Tendances", watch_now: "Regarder", suitable: "Pour vous", episode: "Épisode", watch_ep1: "Voir Épisode 1", select_ep: "Choisir l'épisode", prev: "Précédent", next: "Suivant", ep_list: "Liste des épisodes", locked: "Épisode Premium Verrouillé", limit: "Limite Atteinte", watch_ad: "Voir Pub (Débloquer 1 Ep)", vip: "S'abonner VIP", login: "Se connecter", not_found: "Données introuvables", no_video: "Vidéo indisponible dans ce pays.", limit_desc: "Les invités peuvent voir jusqu'à l'épisode 10. Connectez-vous pour en voir plus gratuitement.", locked_desc: "Vous avez atteint la limite de 15 épisodes gratuits. Regardez une publicité pour débloquer cet épisode ou devenez VIP." },
@@ -57,7 +57,7 @@ export async function verifyPassword(password: string, storedHash: string) {
 }
 
 // =====================================================================
-// API FETCHERS DENGAN HIERARKI FALLBACK DATA BERANTAI DAN PARSER PROSEDURAL
+// API FETCHERS DENGAN HIERARKI FALLBACK BERANTAI DAN PARSER MUTLAK
 // =====================================================================
 
 export async function fetchCatalog(lang: string) {
@@ -65,6 +65,7 @@ export async function fetchCatalog(lang: string) {
     if (!res.ok) return [];
     const json = await res.json();
     
+    // HIERARKI FALLBACK DATA BERANTAI MUTLAK: lang -> id -> en -> zh
     const langData = json?.data?.[lang] || json?.data?.id || json?.data?.en || json?.data?.zh || json?.data;
     if (!langData || !langData.nextjs_ssr_data) return [];
     
@@ -94,6 +95,7 @@ export async function fetchMovieDetail(lang: string, slug: string) {
     if (!res.ok) return null;
     const json = await res.json();
     
+    // HIERARKI FALLBACK DATA BERANTAI MUTLAK: lang -> id -> en -> zh
     const langData = json?.data?.[lang] || json?.data?.id || json?.data?.en || json?.data?.zh || json?.data;
     if (!langData || !langData.nextjs_ssr_data) return null;
 
@@ -135,7 +137,7 @@ export async function fetchEpisodeData(lang: string, slug: string, episodeStr: s
     if (!res.ok) return null;
     const json = await res.json();
     
-    // HIERARKI FALLBACK DATA MUTLAK
+    // HIERARKI FALLBACK DATA BERANTAI MUTLAK: lang -> id -> en -> zh
     const langData = json?.data?.[lang] || json?.data?.id || json?.data?.en || json?.data?.zh || json?.data;
     if (!langData || !langData.nextjs_ssr_data) return null;
 
@@ -144,37 +146,49 @@ export async function fetchEpisodeData(lang: string, slug: string, episodeStr: s
     let subtitleUrl = "";
     const targetEp = parseInt(episodeStr, 10);
 
-    // KUNCI PERBAIKAN: Melakukan iterasi pada setiap chunk dan membedah objek JSON secara ketat
     rawData.forEach((chunk: string) => {
-        // Bersihkan escaping NextJS agar JSON valid
         const cleanChunk = chunk.replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/\\\//g, '/');
         
-        // Split berdasarkan pola objek video untuk isolasi per episode
-        // API Shortflix biasanya membungkus data episode dalam blok {"video":{...}}
-        const blocks = cleanChunk.split('"video":{');
+        // PERBAIKAN FATAL: Memecah string tepat di posisi kunci "episodeNumber": 
+        // Ini memastikan kita mendapatkan array blok di mana setiap blok didedikasikan untuk 1 episode.
+        const epBlocks = cleanChunk.split('"episodeNumber":');
         
-        for (const block of blocks) {
-            // Cek apakah blok ini mengandung episodeNumber yang kita cari
-            // Kita menggunakan regex untuk mencari "episodeNumber": 2 (spasi opsional)
-            const epMatch = block.match(/"episodeNumber"\s*:\s*(\d+)/);
+        // Kita mulai dari index 1 karena index 0 adalah data sebelum kata "episodeNumber": pertama muncul
+        for (let i = 1; i < epBlocks.length; i++) {
+            const block = epBlocks[i];
             
-            if (epMatch && parseInt(epMatch[1], 10) === targetEp) {
-                // Ekstrak URL Video
-                const vMatch = block.match(/"videoUrl"\s*:\s*"([^"]+)"/);
+            // Cek secara spesifik apakah blok ini milik episode yang sedang dicari (cth: "2," atau "2}")
+            if (block.startsWith(`${targetEp},`) || block.startsWith(`${targetEp}}`)) {
+                
+                // Mengambil video URL (.m3u8) di DALAM blok episode ini
+                const vMatch = block.match(/"videoUrl"\s*:\s*"([^"]+\.m3u8[^"]*)"/);
                 if (vMatch) videoUrl = vMatch[1];
 
-                // Ekstrak URL Subtitle
-                const sMatch = block.match(/"subtitleUrl"\s*:\s*"([^"]+)"/);
+                // PERBAIKAN FATAL SUBTITLE: URL subtitle dari API Shortflix ternyata disimpan dengan kunci "fileUrl", bukan "subtitleUrl"!
+                const sMatch = block.match(/"fileUrl"\s*:\s*"([^"]+\.vtt[^"]*)"/);
                 if (sMatch) subtitleUrl = sMatch[1];
                 
-                // Jika sudah ditemukan di blok ini, hentikan pencarian
+                // Jika sudah mendapatkan video, hentikan pencarian karena kita sudah berada di episode yang tepat!
                 if (videoUrl) break;
             }
         }
-    });
 
-    // Logging untuk debugging di terminal Cloudflare
-    console.log(`Debug: Lang=${lang}, Ep=${targetEp}, FoundVideo=${videoUrl}, FoundSub=${subtitleUrl}`);
+        // CADANGAN KEAMANAN: Jika metode split gagal membedah, gunakan pemindai berbasis index
+        if (!videoUrl) {
+            const indexToken = cleanChunk.indexOf(`"episodeNumber":${targetEp}`);
+            if (indexToken !== -1) {
+                // Mengambil 3000 karakter setelah nomor episode ditemukan untuk melacak URL-nya
+                const isolatedWindow = cleanChunk.substring(indexToken, indexToken + 3000);
+                
+                const vMatch = isolatedWindow.match(/"videoUrl"\s*:\s*"([^"]+\.m3u8[^"]*)"/);
+                if (vMatch) videoUrl = vMatch[1];
+
+                // Menggunakan kunci "fileUrl" untuk mengambil subtitle
+                const sMatch = isolatedWindow.match(/"fileUrl"\s*:\s*"([^"]+\.vtt[^"]*)"/);
+                if (sMatch) subtitleUrl = sMatch[1];
+            }
+        }
+    });
 
     return { videoUrl, subtitleUrl };
 }
